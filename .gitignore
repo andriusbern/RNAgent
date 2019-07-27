@@ -2,6 +2,7 @@ rlfold/trained_models
 rlfold/data
 rlfold/analysis
 rlfold/notes.md
+rlfold/algorithms
 
 rlfold.egg-info
 .vscode

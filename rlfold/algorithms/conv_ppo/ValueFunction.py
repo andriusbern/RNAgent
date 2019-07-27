@@ -36,8 +36,6 @@ class NNValueFunction(object):
             self.obs_ph = tf.placeholder(tf.float32, shape=[None, self.obs_dim], name='obs_valfunc')
             self.reshaped = tf.reshape(self.obs_ph, [-1, 64, 64, 1])
             self.val_ph = tf.placeholder(tf.float32, (None,), 'val_valfunc')
-            # hid1 layer size is 10x obs_dim, hid3 size is 10, and hid2 is geometric mean
-            # heuristic to set learning rate based on NN size (tuned on 'Hopper-v1')
             self.lr = self.lParameters['lr_critic'] #/ np.sqrt(hid2_size)  # 1e-3 empirically determined
             # 3 hidden layers with tanh activations
             out = tf.layers.conv2d(inputs=self.reshaped,
@@ -79,12 +77,11 @@ class NNValueFunction(object):
         with self.g.as_default():
             self.obs_ph = tf.placeholder(tf.float32, (None, self.obs_dim), 'obs_valfunc')
             self.val_ph = tf.placeholder(tf.float32, (None,), 'val_valfunc')
-            # hid1 layer size is 10x obs_dim, hid3 size is 10, and hid2 is geometric mean
-            hid1_size = self.obs_dim * 5  # default multipler 10 chosen empirically on 'Hopper-v1'
-            hid3_size = 16  # 5 chosen empirically on 'Hopper-v1'
+            hid1_size = self.obs_dim * 5  
+            hid3_size = 16  
             hid2_size = int(np.sqrt(hid1_size * hid3_size))
-            # heuristic to set learning rate based on NN size (tuned on 'Hopper-v1')
-            self.lr = 1e-3 #/ np.sqrt(hid2_size)  # 1e-3 empirically determined
+           
+            self.lr = 1e-3
             print('Value Params -- h1: {}, h2: {}, h3: {}, lr: {:.3g}'
                   .format(hid1_size, hid2_size, hid3_size, self.lr))
             # 3 hidden layers with tanh activations
@@ -109,16 +106,12 @@ class NNValueFunction(object):
         self.sess.run(self.init)
 
     def fit(self, x, y):
-        """ Fit model to current data batch + previous data batch
+        """ 
 
-        Args:
-            x: features
-            y: target
-            logger: logger to save training loss and % explained variance
         """
         num_batches = max(x.shape[0] // 256, 1)
         batch_size = x.shape[0] // num_batches
-        y_hat = self.predict(x)  # check explained variance prior to update
+        y_hat = self.predict(x)  
         old_exp_var = 1 - np.var(y - y_hat)/np.var(y)
         if self.replay_buffer_x is None:
             x_train, y_train = x, y
@@ -136,12 +129,8 @@ class NNValueFunction(object):
                              self.val_ph: y_train[start:end]}
                 _, l = self.sess.run([self.train_op, self.loss], feed_dict=feed_dict)
         y_hat = self.predict(x)
-        loss = np.mean(np.square(y_hat - y))         # explained variance after update
-        exp_var = 1 - np.var(y - y_hat) / np.var(y)  # diagnose over-fitting of val func
-
-        # logger.log({'ValFuncLoss': loss,
-        #             'ExplainedVarNew': exp_var,
-        #             'ExplainedVarOld': old_exp_var})
+        loss = np.mean(np.square(y_hat - y))         
+        exp_var = 1 - np.var(y - y_hat) / np.var(y) 
 
     def predict(self, x):
         """ Predict method """
