@@ -7,6 +7,8 @@ rlfold/algorithms
 rlfold.egg-info
 .vscode
 
+**/__pycache__/**
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
