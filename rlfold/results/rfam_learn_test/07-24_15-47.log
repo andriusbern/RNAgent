@@ -1,0 +1,27 @@
+Dataset: rfam_learn_test, date: 07-24_15-47, solved 3/100 sequences
+====================================================================================================
+
+******************** 07-24_15-47 ********************
+Seq Nr.    25, Len: 231, HD:   0, Reward: 1.00000
+S:  GCCCCCCCCCCCCCCGCCGCCCCCCCGGGGCAACACGAACCACCAACAAGGGCCAACGCCGAAACAACGGCGUAAAAGGCCCAUGCGUGUAACAACCACCCCGAAACGGGGAUGGUAAAGCGCGAACCACGACCGACCGCCACCACAAGCCCCGACCACCACCAAAAAAAGGUGGAAGUCGGGGCAAAAGGUGAGCGAAAAGGUCGUGGCGCGCAAGGCAGGAAAAAAAAA
+F:  ............((.((((((((...))))).(((((.........((.(((((.((((((......))))))....))))).)))))))....(((((((((...))))).))))...(((((..((((((((...(((((((....((((((((..(((((.......)))))..))))))))....)))).)))....)))))))))))))..))).)).........
+T:  ............((.((((((((...))))).(((((.........((.(((((.((((((......))))))....))))).)))))))....(((((((((...))))).))))...(((((..((((((((...(((((((....((((((((..(((((.......)))))..))))))))....)))).)))....)))))))))))))..))).)).........
+FE: -116.600
+
+Solved in: 1/1
+******************** 07-24_15-47 ********************
+Seq Nr.    28, Len: 387, HD:   0, Reward: 1.00000
+S:  ACCCCCCCCCCCCCCCGCGGAAAAUCCGCGGGGGAAGACCAACACCCGCGGAAACCCAACCCCAACAGAAAAAAGGGAGUUGGGAAUCAAACCACACCAAAAGAAAGAGUGUGGACCACCCACCCACAACCCGCCCACAAAAAGGGCGGGGUGGGUGGACGCGCACCCCCGCCAAGCCCCAAACCAAAAAGGGCUAACACCCAAAAAAGGGUGUAAAAAAAACCCACGGGCCAAAAAAAGGCCCGUGGGUAAAACCGAAAAACGGGAAGCCGGAACCCCCGGACCAAAGGGACACGGGGGCCGGCAUCAAAAAACACCAAAAGGUGAAAACCAAAAAGGGGCGAAAGGGAGUGCGCGAAGUGGUACGCGGGGUCAAGGGGGGUAAAA
+F:  (((((((....((((((((((...))))))))))..((((.....(((((((..(((((((((...........))).))))))..))...(((((((........).))))))(((((((((((((..(((((((.......))))))))))))))).((((((((((((((.(((((...........))))).((((((......)))))).......(((((((((((.......)))))))))))....(((.....)))((.(((((..(((((((.((....)).).))))))))))).))......((((....))))....((.....))))))...))).)))))))..))))).)))))))))..)))))))....
+T:  (((((((....((((((((((...))))))))))..((((.....(((((((..(((((((((...........))).))))))..))...(((((((........).))))))(((((((((((((..(((((((.......))))))))))))))).((((((((((((((.(((((...........))))).((((((......)))))).......(((((((((((.......)))))))))))....(((.....)))((.(((((..(((((((.((....)).).))))))))))).))......((((....))))....((.....))))))...))).)))))))..))))).)))))))))..)))))))....
+FE: -211.700
+
+Solved in: 1/1
+******************** 07-24_15-47 ********************
+Seq Nr.    88, Len: 198, HD:   0, Reward: 1.00000
+S:  ACCGCGCCCCAAGAAAAAUUCUAUGGAAGCGCGAACCCACGGACCAAAAAAAAAAAAGGAAAACCCCAACAACCACCCCCCAACGACCGCACCCAAAAGGGAGCGGUCGGGGGGUGGAUGUAGGGGAACCCCCACCCCCAAACGAACCGAAAGAAAAAGGAAAUCGAAAGGGGAGUGGGGGGGUCCGUGGGAAAAAAA
+F:  ..(((((.(((((((...)))).)))..)))))..((((((((((..................((((.(((.(((((((((...((((((.(((....))).))))))))))))))).))).))))..(((((((((((...(((.((..........))...)))...)))).))))))))))))))))).......
+T:  ..(((((.(((((((...)))).)))..)))))..((((((((((..................((((.(((.(((((((((...((((((.(((....))).))))))))))))))).))).))))..(((((((((((...(((.((..........))...)))...)))).))))))))))))))))).......
+FE: -109.700
+
+Solved in: 1/1

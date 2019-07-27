@@ -1,0 +1,8 @@
+main:
+  
+
+
+environment:
+  kernel_size: 30
+  state_type: binary
+  

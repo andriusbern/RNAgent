@@ -1,0 +1,64 @@
+main:
+    model: PPO2
+    policy: CustomCnnPolicy
+    n_workers: 1
+    n_steps: 5000
+models:
+    PPO2:
+        gamma: 0.9
+        n_steps: 128
+        ent_coef: 0.01
+        learning_rate: 0.004
+        vf_coef: 0.5
+        max_grad_norm: 0.5
+        lam: 0.98
+        nminibatches: 4
+        noptepochs: 3
+        cliprange: 0.2
+        full_tensorboard_log: false
+        verbose: 1
+    A2C: {}
+    DDPG: {}
+policies:
+    CnnPolicy: {}
+    CustomCnnPolicy:
+        CustomCnnPolicy:
+        filters:
+        filters:
+        - 16
+        - 16
+        - 16
+        - 32
+        - 32
+        - 32
+        kernel_size:
+        - 3
+        - 3
+        - 3
+        - 5
+        - 5
+        - 5
+        stride:
+        - 2
+        - 1
+        - 1
+        - 2
+        - 1
+        - 1
+        lstm: []
+        shared: 
+        - 512
+        h_actor:
+        - 128
+        - 32
+        h_critic:
+        - 64
+        - 16
+        activ: relu
+        pd_init_scale: 0.05
+        conv_init_scale: 1.4
+        kernel_initializer: glorot_normal_initializer
+        init_bias: .5
+    CustomCnnLstmPolicy: {}
+    MlpPolicy: {}
+environment: {}

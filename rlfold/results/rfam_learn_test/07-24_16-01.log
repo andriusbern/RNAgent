@@ -1,0 +1,219 @@
+Dataset: rfam_learn_test, date: 07-24_16-01, solved 27/100 sequences with 20 budget.
+====================================================================================================
+
+******************** 07-24_16-01 ********************
+Seq Nr.    14, Len: 210, HD:   0, Reward: 1.00000
+S:  AACCCGGCCCGCGCGGCCGCCCCCCACGACCGAAAACGGUCAUGGGGAAAAACCCGAAGCCCCAAAAAAAGGGGCAAAAUCGGAAGACGCCAAAACCCGAACAACCAGGACCAAACAAAGAAAAAAAAAAACCGGACAACGCGAAACGCGUUGAAACCGGAAGGUCCUGGGGGUUAAAAGCGACUACAAGGCGCCGCGCAAAAAAAAAAA
+F:  ..........(((((((.((((((((.(((((....))))).)))))......((((.(((((.......)))))....)))).((.(((...(((((......((((((((...................((((.(((((((...)))))))...))))..)))))))))))))....))).))....))))))))))...........
+T:  ..........(((((((.((((((((.(((((....))))).)))))......((((.(((((.......)))))....)))).((.(((...(((((......((((((((...................((((.(((((((...)))))))...))))..)))))))))))))....))).))....))))))))))...........
+FE: -89.000
+
+Solved in: 2/20
+******************** 07-24_16-01 ********************
+Seq Nr.    16, Len: 180, HD:   0, Reward: 1.00000
+S:  ACCCCCACCCCCCACCCCGCCAAAAGCAACCCCAAAAGGGGAAACUUUUAACCCAGGACCGCAAACCGAGCCAAAGAAGGCCGGGCGGAAACCAGGGUAACCCAAGCGCCACCGCACGCCCAAAAGGGCUGCAGUGAGCGCAAGGGGGCGGGGUAAAGGUGACAGGGUAAGAAAAGAAAA
+F:  ((((.((((....(((((((((((((...((((....))))...))))).((((.((.((((...(((.(((......))))))))))...)).))))..(((..(((((((.(((.((((....))))))).))).))))..)))))))))))...))))...))))............
+T:  ((((.((((....(((((((((((((...((((....))))...))))).((((.((.((((...(((.(((......))))))))))...)).))))..(((..(((((((.(((.((((....))))))).))).))))..)))))))))))...))))...))))............
+FE: -89.200
+
+Solved in: 12/20
+******************** 07-24_16-01 ********************
+Seq Nr.    17, Len: 420, HD:   0, Reward: 1.00000
+S:  ACCGCGCCCCCGCCCCCCCCCCCGCACCGACACCCAAACCCCCAACAGAAACCCCACCGACGCCAACGAAGAAGGAACGCGACCCCAAAACCAAAAAGGAAAAGGGGUCGCAAUCCUCGAAGGCUCGGUGGGGACCCAACCGACCCCGACCCAAAAGGGAAACGGGGACCCACAGCCCCGCGGAAAACCGCGGGGCAAAGUGGGUGGAAGGGUAACGCCGCACGGGCCAAGAGGCAGCCAACCCCACACGCCAAAAAAGGCGUGAAGGGGUGGCUAACACCGACAAAGAAGUCGGUAAACCGAGCGGCGUAAGGGGGUAUGGGGUCGGUAGGGGAGGAACACCCCGGAAAAACGGAGGUGAGGCCACACGGGGCCAGCCAGAACAAAGGCUGGCACCCGAAUGUGGCCCGGGGGCAAAAA
+F:  .....(((((((....((.((((..((((((.((((.((((((........(((((((((.(((..(((....(((..((((((((....((.....))....))))))))..))))))..))))))))))))((((..((..(((((.(((....)))...)))))((((((.(((((((((....)))))))))...))))))))..)))).(((((((.((((((....)))(((((.((((.((((((......))))))..)))))))))...((((((......))))))...))).)))))))..)))))).)))))))))).)))).))..(((((((......))).)))).((((((((((((((((((........))))))).))))..)))))))))))))).....
+T:  .....(((((((....((.((((..((((((.((((.((((((........(((((((((.(((..(((....(((..((((((((....((.....))....))))))))..))))))..))))))))))))((((..((..(((((.(((....)))...)))))((((((.(((((((((....)))))))))...))))))))..)))).(((((((.((((((....)))(((((.((((.((((((......))))))..)))))))))...((((((......))))))...))).)))))))..)))))).)))))))))).)))).))..(((((((......))).)))).((((((((((((((((((........))))))).))))..)))))))))))))).....
+FE: -262.800
+
+Solved in: 6/20
+******************** 07-24_16-01 ********************
+Seq Nr.    19, Len: 230, HD:   0, Reward: 1.00000
+S:  ACCCCCCGCGCCGGGGCCGCCCCAAACAACGACGCCAGCCGAACAGCGCCAGCCCCCGCCCAAAAGAGCGGGGGCAAAGGACGCUGCCGAAAACAAAAACGGAAAAAAAAAUCGGCAAGGCGUCGAAACACCAAGAAAGGAGUAAAAGCGCAAAGCCGAAAAGAAACGGCAAACCGGAAAGGCAGGACCCCAAGAAAAAGGGGUCCUGCCAAACCGGAUGCGCUGGAGGC
+F:  ...(((((...)))))..(((((......(((((((.(((((.(((((((.((((((((.(....).))))))))...)).)))))(((..........))).........)))))..)))))))..((.((......)).))...((((((..((((........))))...((((...(((((((((((........)))))))))))...)))).)))))))).)))
+T:  ...(((((...)))))..(((((......(((((((.(((((.(((((((.((((((((.(....).))))))))...)).)))))(((..........))).........)))))..)))))))..((.((......)).))...((((((..((((........))))...((((...(((((((((((........)))))))))))...)))).)))))))).)))
+FE: -112.500
+
+Solved in: 12/20
+******************** 07-24_16-01 ********************
+Seq Nr.    25, Len: 231, HD:   0, Reward: 1.00000
+S:  ACACCCCCCCGCCCCCACGGCACACAGUGCCAGCCCCAAACAACAACCAAGGCGAACCCCCAAAAAAGGGGGUAAAACGCCUAGGGGGGCAAGACGCCACGCCAAAGGCGUAGGCGAAAACCCCAAGCCCCCCGAAACGCCACCAAGACCCCACGCAACCACCAAAGAAAGGUGGAAGCGUGGGGAAAAGGUGAGCGAAAACGGGGGGCGGGGUAAGUGAGGAAAAAAAAA
+F:  ............((.((((((((...))))).(((((.........((.(((((.((((((......))))))....))))).)))))))....(((((((((...))))).))))...(((((..((((((((...(((((((....((((((((..(((((.......)))))..))))))))....)))).)))....)))))))))))))..))).)).........
+T:  ............((.((((((((...))))).(((((.........((.(((((.((((((......))))))....))))).)))))))....(((((((((...))))).))))...(((((..((((((((...(((((((....((((((((..(((((.......)))))..))))))))....)))).)))....)))))))))))))..))).)).........
+FE: -122.300
+
+Solved in: 18/20
+******************** 07-24_16-01 ********************
+Seq Nr.    27, Len: 299, HD:   0, Reward: 1.00000
+S:  ACAGGCAGAAAAAAAAAUCUGCCUAAAACCAAGCAAAAGCAUGGAACGACCGCACCAACCACCCCCCACCGCCAAAAGGCAACCCCACCGCACCCCACCCCAGACCCCCAGACCCCCAACCCCCCCGAACCAGGCCCGACCGCCGAAAACGGCGGUAGGGCCAGGUUAAAACAAACACCCAACCCAACGAACAAGAAAAAGUCGAAAGGGAAAAGGGUGACGGGGGGAAAAGGGGGACAAAGGGGGUCGGGGGGGGCGGAGGGGUAGCCGGCGGUGAAGGAGGUGGAAGGGCGGUCGAA
+F:  ..(((((((........)))))))....(((.((....)).)))..(((((((.((..(((((((.(((((((....(((.(((((.((((.((((.(((..(((((((.(.(((((...(((((((((((.(((((.(((((((....))))))).))))).))))........(((((..(((..(((.(........))))...)))....))))).)))))))....))))).)...)))))))))))))))))).))))).))))))))))..)).)))))..)))))))))..
+T:  ..(((((((........)))))))....(((.((....)).)))..(((((((.((..(((((((.(((((((....(((.(((((.((((.((((.(((..(((((((.(.(((((...(((((((((((.(((((.(((((((....))))))).))))).))))........(((((..(((..(((.(........))))...)))....))))).)))))))....))))).)...)))))))))))))))))).))))).))))))))))..)).)))))..)))))))))..
+FE: -178.100
+
+Solved in: 3/20
+******************** 07-24_16-01 ********************
+Seq Nr.    30, Len: 395, HD:   0, Reward: 1.00000
+S:  ACCCGGGCCCACCCCCCUGGGCCGCGACCCCCAAAGGGGUCGACGAAAAAAACCGGGAACGACCGCAAACAAAAAGGAAACCGCCAAAGCACACGAAAACGUGUGCAAAGGCGGUGCGGUCGAAAAAAACAAACAGCGACCCCGAAACAACACGCAAGGGCAAAAAACAAACCACCAAAAACCAAGAAAAAAUUGGAAAAAAGGUGGACGCGCAACGAAAAGCGCGUACGAAGCCAGACCGAAGAAGGUCAAAAAGCGAGAAAAAAAUCGCACACCAAGAAACAAAAAUGGUGUAUGGCUACGAAAAAAAGCGCCACCAAAGGUGGCGCAAACCAAAAGGGAACCCGAAAAGAAAAUCGGGAAAGCCCAUUGCGAAAAAAAACGGGGUACGCUAA
+F:  .((((((((((......)))))(((((((((....))))))).)).......)))))..(((((((.............((((((...(((((((....)))))))...)))))))))))))............((((((((((........(((((((((..........(((((.....((((.......))))......)))))((((((........)))))).((.(((((((((......)))).....((((........))))((((((...........)))))).))))).)).......((((((((...))))))))...((....))...(((((........)))))...)))).)))))........)))))).))))..
+T:  .((((((((((......)))))(((((((((....))))))).)).......)))))..(((((((.............((((((...(((((((....)))))))...)))))))))))))............((((((((((........(((((((((..........(((((.....((((.......))))......)))))((((((........)))))).((.(((((((((......)))).....((((........))))((((((...........)))))).))))).)).......((((((((...))))))))...((....))...(((((........)))))...)))).)))))........)))))).))))..
+FE: -170.400
+
+Solved in: 4/20
+******************** 07-24_16-01 ********************
+Seq Nr.    32, Len: 195, HD:   0, Reward: 1.00000
+S:  AGCCCCCCCCCCCCCGCGCCACCGCCCGGCAAGAGCCGGGCGGCAAAAACCCAACCCGAAAAAAAAUCGGGAAAAGGGCCCAACCCCAAACCCAACGCCAACCGCAAAAAACCCCAGGACCCAAAAAAGGGUCCAAAGGGGAAGCGGUAGGAAAAUGGGUAAAAGGGAAGAGGAUGGAAAGCGGGGGAAAGGGGG
+F:  ..(((((...(((((((.((((((((((((....)))))))))......(((..(((((.......)))))....)))(((..(((...(((((...((.(((((......((((.((((((......))))))...))))..))))).))....)))))....)))..).)).)))...)))))))...)))))
+T:  ..(((((...(((((((.((((((((((((....)))))))))......(((..(((((.......)))))....)))(((..(((...(((((...((.(((((......((((.((((((......))))))...))))..))))).))....)))))....)))..).)).)))...)))))))...)))))
+FE: -101.100
+
+Solved in: 17/20
+******************** 07-24_16-01 ********************
+Seq Nr.    33, Len: 279, HD:   0, Reward: 1.00000
+S:  ACCGGCCGCCCCCCCCCCCGCCCCCCGCAGCCAAGAACCACAAAAAGUGGUAAAAAGCAGCGGGGGAGCAACACCCCACCCAAACCCCAAGACACCCACGAGGCAAAAGCCUCGAGAGAUGAAUAGGGGAAAAAAACAAAAAACCCAAAACCGAAACCGGACCAAAAGGACCGGAAUCGGUAAAGGGGGAUGGGGUGAAAAGCUACCAGCAGCCAAAAUGGCGCAGGUACCGACCCCAAAAGGGGUCGGAAAAAGCGGGGGAGGAAAAAGGGCGGCCGA
+F:  ..(((((((((((.((((((((((((((.((.....(((((.....))))).....)).)))))))(((..(((((((.((...((((.(..((.((.((((((....)))))).).).))..).))))..............(((...(((((..((((.((....)).))))..)))))...))))).)))))))....)))(((.((.((((...)))))).))).((((((((....)))))))).....))))))).)).....))))))))).
+T:  ..(((((((((((.((((((((((((((.((.....(((((.....))))).....)).)))))))(((..(((((((.((...((((.(..((.((.((((((....)))))).).).))..).))))..............(((...(((((..((((.((....)).))))..)))))...))))).)))))))....)))(((.((.((((...)))))).))).((((((((....)))))))).....))))))).)).....))))))))).
+FE: -148.000
+
+Solved in: 5/20
+******************** 07-24_16-01 ********************
+Seq Nr.    34, Len: 315, HD:   0, Reward: 1.00000
+S:  AGCCCGCGGGACCCCAGCCGCGGCGAGACCAAAAGGUACGAACACCACGGAGCAACACCCCGCCCCCCCACACACCCCGAGCCCGACCAAACAGCGACCCCCAGCGCGAACGCCACCCCACCCAACCCGAACCCACCCCCACCCCCGAACCCCCAACCCCCCCCACCCGCCCAGAAAAAAAGGGCGGGUGGGGGGGAAGGGAGGUACGAGGGGGGGGUGGGAACGGGAAGGGAGGGGAAGGCGUCGAAGCAGGGGGUCGCAAAAGGACGGGCAGGGGAUGUGAGGGGGGGAAAACGGGGAUGAAGAACCGUGGUA
+F:  ...((((((........))))))((..(((....))).))...(((((((..(..((((((((((((((.((((((((..(((((.((.....(((((((((.((.(((.((((.((((.(((..((((..(((((((((.(((.((.((((((...(((((((((((((((.........)))))))))))))))..))).))).)).))))))))))))..))))..))).))))..)))))))..)).)))))))))....)).))))).)))).)))).)))))))....))))).))..)..))))))).
+T:  ...((((((........))))))((..(((....))).))...(((((((..(..((((((((((((((.((((((((..(((((.((.....(((((((((.((.(((.((((.((((.(((..((((..(((((((((.(((.((.((((((...(((((((((((((((.........)))))))))))))))..))).))).)).))))))))))))..))))..))).))))..)))))))..)).)))))))))....)).))))).)))).)))).)))))))....))))).))..)..))))))).
+FE: -217.700
+
+Solved in: 16/20
+******************** 07-24_16-01 ********************
+Seq Nr.    40, Len: 110, HD:   0, Reward: 1.00000
+S:  ACGGCCGGCGCCCCGCCACCCCGACCCGCACCGAGAAAAAUCGGAAGCAAUCGAAAGGGUGGCGAAAAGCGCCAGGACCCGCCCGGCGCACACGCAGGGCGGGAACCGUA
+F:  (((((((((((..(((((((((((...((.((((......))))..))..)))...))))))))....))))).)).(((((((.(((....))).)))))))..)))).
+T:  (((((((((((..(((((((((((...((.((((......))))..))..)))...))))))))....))))).)).(((((((.(((....))).)))))))..)))).
+FE: -59.100
+
+Solved in: 11/20
+******************** 07-24_16-01 ********************
+Seq Nr.    43, Len: 333, HD:   0, Reward: 1.00000
+S:  ACCCCCCCACCGGGGCCCGCCCGAACCCGGCGAAAACCCCCACGCAAACCCCACCGGCAACCCGAAAACGGAGUUGCCGGCCACCAAAGGUGGAAACCAAAAAGAAAUGGAAACCCCACGGGACGCGCGAGCGCCCAAAACGCGCAGGCCAAGAAAGGCCUGACAAACGCGAAAAAAGGCGCUCGCGAAAAAAAACGUCCACGUGGGGAAAAACACAACCCGAACGCGAACACAAACAAAAAAAAAAAUCGCGAAACGGGUUAAAGGGGGCGAGGGGGAAACGCCGGAAAAAAAAAACAAAACCAGCCAAGAAAGGCUGGAAAAAAAGGCGGG
+F:  .((((......))))((((((.....((((((....(((((.(((...((((.(((((((((((....))).))))))))(((((...)))))...(((........)))...((((((((((((((((((((((.....((((((((((......)))))).....))))......))))))))))........))))).)))))))........((((((..(((((...................)))))...))))))...))))))).)))))...))))))...............((((((......)))))).......))))))
+T:  .((((......))))((((((.....((((((....(((((.(((...((((.(((((((((((....))).))))))))(((((...)))))...(((........)))...((((((((((((((((((((((.....((((((((((......)))))).....))))......))))))))))........))))).)))))))........((((((..(((((...................)))))...))))))...))))))).)))))...))))))...............((((((......)))))).......))))))
+FE: -164.700
+
+Solved in: 1/20
+******************** 07-24_16-01 ********************
+Seq Nr.    48, Len: 379, HD:   0, Reward: 1.00000
+S:  ACCCCCCGCCAAACACAAAGUGUAAAGGCGGGGAAAAAAAAAACGAAAACCCCGAAGCACCCCCAAGCCCCCACCCCGCCCCCAGCCCAGCCGCCGGCAACCGCGCGACGAAACACCGAAGAAACGAGUGAAACGACGCGCGGACGAAAACCCCAACCCGGAAACCGGGAAGGGGAAAACGUACACCCAAGCCAAGCCCAACCAAAAAGGGAAGGGGGCUAGGGUAAACCCGAAACCCAAAACCGAGGAAACCACGGUGGGAAUCGGGAAAAAGCCGGCGGCAAGGGCAGGGGGCGGGGAUGGGGGCAAACCAAAAACAAAAAAAAUGAAAGGGAAGGUGCAGGGGUACCCCCCCGCCGCGCGGGCGGCGGGGGGGUAA
+F:  ...(((((((..((((...))))...)))))))...............(((((...((((((((..(((((((((((((((((.((((.(((((((((..(((((((.((...(((((......)).)))...)).)))))))(((....((((..(((((...)))))..))))....)))..((((.((((...(((..((......))..))))))).))))...(((((..(((...((((.((...)).)))))))..))))).....)))))))))..)))).)))))))))).)))))))..........((.......))...)))..))))).)))))(((((((((((((....)))))))))))))..
+T:  ...(((((((..((((...))))...)))))))...............(((((...((((((((..(((((((((((((((((.((((.(((((((((..(((((((.((...(((((......)).)))...)).)))))))(((....((((..(((((...)))))..))))....)))..((((.((((...(((..((......))..))))))).))))...(((((..(((...((((.((...)).)))))))..))))).....)))))))))..)))).)))))))))).)))))))..........((.......))...)))..))))).)))))(((((((((((((....)))))))))))))..
+FE: -220.300
+
+Solved in: 1/20
+******************** 07-24_16-01 ********************
+Seq Nr.    51, Len: 206, HD:   0, Reward: 1.00000
+S:  AGCCCCCGCGCCCCCGCCGGCCCCCCCACGCGACCCAAGAAAGAAACGAAGCCAAAAGGCAUCAAAAAAAAAAGGGAAUCGCGUAAGGGGGGCCACCAAGCGCCAAAAGGCGCAAGGAAAAACCCACCGGCCGAGGAACGCAAAGCGUAAAAGCGGACCCCAAGGGGGUCCGCCCCGGCCGGAUGGGGGCGGGAGCGCGGGGCAAA
+F:  .(((((.((((.((((((((((((((.(((((((((...........((.(((....))).))..........)))..))))))..)))))))).((..(((((....)))))..)).....(((((((((((.((.((((...))))....(((((((((...)))))))))))))))))).)))))))))).)))))))))...
+T:  .(((((.((((.((((((((((((((.(((((((((...........((.(((....))).))..........)))..))))))..)))))))).((..(((((....)))))..)).....(((((((((((.((.((((...))))....(((((((((...)))))))))))))))))).)))))))))).)))))))))...
+FE: -130.000
+
+Solved in: 8/20
+******************** 07-24_16-01 ********************
+Seq Nr.    52, Len: 223, HD:   0, Reward: 1.00000
+S:  AGCCGGCCCCCCCGACCCCCCGAAACAAAAUGUUUAAAGAAAAAAAAAAGGCCGGCUAAAACACCCGCAGCCACCAAAAAACAACGCAAAAGCGGACCACAAAAGGUCAAACCCCCAACCGGCACCCCGACCCAAGCGAACCGCAAAAGCGGAAGCAGGGACGGGGUGACCGGAAGGGGGAGGUGGCGCGCACGGACAAACAAAUUGCCGUGAAAAAAGGUAA
+F:  ((((((((..............(((((...)))))..............)))))))).....((((((.((((((.........(((....)))((((......))))...(((((..(((((((((((.(((..((...((((....))))..)).))).))))))).))))..))))).)))))))))(((((.(((.....))))))))......)))..
+T:  ((((((((..............(((((...)))))..............)))))))).....((((((.((((((.........(((....)))((((......))))...(((((..(((((((((((.(((..((...((((....))))..)).))).))))))).))))..))))).)))))))))(((((.(((.....))))))))......)))..
+FE: -99.300
+
+Solved in: 10/20
+******************** 07-24_16-01 ********************
+Seq Nr.    54, Len: 404, HD:   0, Reward: 1.00000
+S:  ACCCCCCGCCCCGCCCCCCCCCAAGAAGAAUCUUGGGAGGGAAACCCGACCCCAACCGCCGGACAAACCACGCAAAAAGCGUGGAGCAAAAAUGCUAGCGAAAACCGAAAAGACAAAAAACCCCAGCCGACGCAAAAAGCGUACGGCUGGAAAGGUCAAACACGCCGAAAAAAACGGCGUACCAACCCAAAAAUGGGAAGGAAAAUCGGAAACGCAAGCGAACAAAAACGCAAAAGCCCCAAAAGGGCGGGCCCAAAAGGGCCCGCCAAGGGGCCCGGCGGACCCAGCCCCCCCCGCAAAAAGCGGGAGGGGGCAGGGAAACACCCCAACCCAAAAAAAAGGGAAGGGGUGAGGCCAAAAAGGCCUGGGGUCAAACAAAAAGGGGGAAGAGGCGGGGGGUAAAA
+F:  ((((((((((.(..((((((((((((....))))))).(((...)))((((((..(((((((.....((((((.....))))))((((....)))).(((....((((...........((((((((((((((.....)))).)))))))...))).....((((((.......)))))).((..((((....))))..))....))))...)))..(((........)))....(((((.....(((((((((....)))))))))..)))))))))))).(((.(((((((((((.....))))).)))))).)))...((((((..(((........)))..))))))(((((.....))))))))))).........)))))..).))))))))))....
+T:  ((((((((((.(..((((((((((((....))))))).(((...)))((((((..(((((((.....((((((.....))))))((((....)))).(((....((((...........((((((((((((((.....)))).)))))))...))).....((((((.......)))))).((..((((....))))..))....))))...)))..(((........)))....(((((.....(((((((((....)))))))))..)))))))))))).(((.(((((((((((.....))))).)))))).)))...((((((..(((........)))..))))))(((((.....))))))))))).........)))))..).))))))))))....
+FE: -227.500
+
+Solved in: 1/20
+******************** 07-24_16-01 ********************
+Seq Nr.    74, Len: 410, HD:   0, Reward: 1.00000
+S:  ACGCCCCGGCCCACCGCCCCCCGGCCCCGAAACGGGGCCAAAGGCGAACGCCGCCCCCCGAAACGGGAACCGAACCCCAAAAGGGGUACGGGGGCGGCGUAAAACACCAACCAACCACCACCGACCGAAAGGCGGAAAUGGUGGGGAUUGGGUGGGCCAACCCCGAAGCACGACCAACAACCACCCCGAACCCACAACCAACGACCCCCGAACCCAACGCGAAAACGCGGGGUAAGGGGGUCGAAAGGAAGUGGGAAAAACCACCCAACGCGACCCCCACCCCCCCCCACCGCGAAAAAGCGGAAAUGGGGGGGGGAAAAGGGGAAAGCAAAAGCAGGUCGCGUGGGUGGAACGGAGGUGGCCCACCCAAAAAAGGGUGGGAAAAAAAAAAAAAGGUCGUAAAACGGGGA
+F:  .......(((((((((((....(((((((...)))))))...)))).(((((((((((((...))))..(((.(((((....))))).))))))))))))......((((((..(((((((((.((....)))))...)))))))).)))))))))))..(((((....((((((.....((((((((..(((((..((..((((((((..((((..((((....))))))))..))))))))...))..))))).....(((((((.((((((((((.((((((((((((((......))))...))))))))))....)))....((....)).))))))))))))))..))).)))))(((((((......))))))).............))))))....))))).
+T:  .......(((((((((((....(((((((...)))))))...)))).(((((((((((((...))))..(((.(((((....))))).))))))))))))......((((((..(((((((((.((....)))))...)))))))).)))))))))))..(((((....((((((.....((((((((..(((((..((..((((((((..((((..((((....))))))))..))))))))...))..))))).....(((((((.((((((((((.((((((((((((((......))))...))))))))))....)))....((....)).))))))))))))))..))).)))))(((((((......))))))).............))))))....))))).
+FE: -242.000
+
+Solved in: 16/20
+******************** 07-24_16-01 ********************
+Seq Nr.    80, Len: 368, HD:   0, Reward: 1.00000
+S:  ACCCCCGGGGCCAGGCCCCAAGCCAACAGCGAAAGAAAAAAAAGCUAUUGGGGGGACUGCCGACCAACCAAAAGCCCAAACAAAAAUGGGCGGGGUCACCGACGGCCCAACACGCCAGCACCGAAAGACGGUGAAAAGACCAGACCGCAACCCCAACCGGCAAGGCCGCCGACCCGCCAGACCCCCACCGCACCCACAAAAAGGGUAAAGCGGUGGGGGACCAAAGGGCAAAAGCCCAUGGUAAAAGAAACCAACCACCCAAAGGGUGGUAGGGCCCACAAGAAAAAAUGGGCAAAAAAGGCGGGACGAAAAGCGGACACAUGCCGGAUGGGGAGCGGACUGGGGCGUGAAGGGCCAUCGGGGGGGUA
+F:  ((((((..(((.((.((((...((((.(((.............))).)))))))).)))))((((..((....(((((........))))))))))).((((.(((((..((((((..(((((.....)))))......((((.((((..(((((.((((((.((((((((.((((((...((((((((((((((.......))))...))))))))))((((..((((....)))).))))........((.(((((((...))))))).))(((((..........)))))......)))))).))....)))).).).)))))).))))).)))).))))))))))..))))).)))))))))).
+T:  ((((((..(((.((.((((...((((.(((.............))).)))))))).)))))((((..((....(((((........))))))))))).((((.(((((..((((((..(((((.....)))))......((((.((((..(((((.((((((.((((((((.((((((...((((((((((((((.......))))...))))))))))((((..((((....)))).))))........((.(((((((...))))))).))(((((..........)))))......)))))).))....)))).).).)))))).))))).)))).))))))))))..))))).)))))))))).
+FE: -199.200
+
+Solved in: 9/20
+******************** 07-24_16-01 ********************
+Seq Nr.    86, Len: 172, HD:   0, Reward: 1.00000
+S:  ACGCCGCCGCAGGCCCCCCCCCACCCCGAAAGAACAACCCGGAACCCGCCACAAACACCCGAACCCCCAACCAAGAAGGAGGGGGUCGGGUGAAGGCGGGUAAACCGGGAAACCCGCGAAAAACGCGGGACGGGAGUAGGGGGGGGCAACGAGCGAGCGUACACCCAAAAAA
+F:  (((((((((...(((((((((.((((((.........(((((.(((((((.....(((((((.(((((..((.....)).))))))))))))..)))))))...)))))...((((((.....)))))).)))).)).)))))))))..)).))).))))............
+T:  (((((((((...(((((((((.((((((.........(((((.(((((((.....(((((((.(((((..((.....)).))))))))))))..)))))))...)))))...((((((.....)))))).)))).)).)))))))))..)).))).))))............
+FE: -103.400
+
+Solved in: 3/20
+******************** 07-24_16-01 ********************
+Seq Nr.    88, Len: 198, HD:   0, Reward: 1.00000
+S:  ACCCGAGCCGACAAAAAAUUUGAUCGAACUCGGAACGCCCGACCGAGAAAAAAAAGAAAAAAAACACACCGACACCCACCCAAACCCGCCACCCAAAAGGGAGGCGGGGGGUGGGUGACGGAGUGUAACCACCCCGCGGAAACGCAACGAAACAGAAAGUAAAGCGAAACCGCAGGGGUGGCGGUCGGGCGAAAAGAA
+F:  ..(((((.(((((((...)))).)))..)))))..((((((((((..................((((.(((.(((((((((...((((((.(((....))).))))))))))))))).))).))))..(((((((((((...(((.((..........))...)))...)))).))))))))))))))))).......
+T:  ..(((((.(((((((...)))).)))..)))))..((((((((((..................((((.(((.(((((((((...((((((.(((....))).))))))))))))))).))).))))..(((((((((((...(((.((..........))...)))...)))).))))))))))))))))).......
+FE: -103.500
+
+Solved in: 16/20
+******************** 07-24_16-01 ********************
+Seq Nr.    90, Len: 125, HD:   0, Reward: 1.00000
+S:  ACCCCCCCGCCCCCACCCCGCCCAACCCCCCGACCACCCAAAAAGAAAGACCCAACGAGCCACGAACAAAAACUGGCUCGUAGGGUGGGUGGUAGGGGGGUUAGGAAGGAUGAGGGCGGGGGGAA
+F:  ..((((((((((.((.((..((.((((((((.(((((((..........((((.((((((((.(........))))))))).))))))))))).)))))))).))..)).)).))))))))))..
+T:  ..((((((((((.((.((..((.((((((((.(((((((..........((((.((((((((.(........))))))))).))))))))))).)))))))).))..)).)).))))))))))..
+FE: -84.500
+
+Solved in: 4/20
+******************** 07-24_16-01 ********************
+Seq Nr.    97, Len: 443, HD:   0, Reward: 1.00000
+S:  ACCCCGCCCCGCCCGGGCGGACCACAGAGCCAAACCCAAGCAAAAAGAAACAAAAGACCAACCCCCAAGCCGACCCCAAGCCGGCAACCCAAAGCCCCGACGAACGAAAACAAAAAAGAAAAGGAAAAAACCACGCCAAAAAGGCGUAAACCGAGCACCGAAAAAAAAACGAAACCCCAAAAUGGGGUAAAAAAAAAAAACGGAUGCUCGGAAAAAGAAAACGAUCGACGGGGCAAGGGAAGCAAAAAACGGCAAGGGGUCGGCAUGGGGGGGUCAGCUAGGGAAGGCUCAAAAACCCCCCCACCCAAAAGGGUGGAAGGGGGUAAGAAAAAAACCCCAACCGGAGCGCAACCGCGCAAGAAGCGCGGAAGACGCAAACAAAAAGCGUCAAAAAAGCGACUCCGGAAGGGGACCCCCCCCGCCGCGGGCGGCGGGGGGGGAAA
+F:  ...((((((.....))))))......(((((...(((.(((..............((((..((((((.(((((((((..((((((..(((...((((((.(((.((................((......))(((((.....)))))...((((((((((.............((((((...))))))............))).)))))))..........)).))).))))))..)))..))......))))..))))))))).)))))))))).))).)))..)))))....((((((((((((....))))))..))))))..........((((..(((((((((..((((((.....))))))..(((((.........)))))......))).))))))..)))).((((((((((((....))))))))))))...
+T:  ...((((((.....))))))......(((((...(((.(((..............((((..((((((.(((((((((..((((((..(((...((((((.(((.((................((......))(((((.....)))))...((((((((((.............((((((...))))))............))).)))))))..........)).))).))))))..)))..))......))))..))))))))).)))))))))).))).)))..)))))....((((((((((((....))))))..))))))..........((((..(((((((((..((((((.....))))))..(((((.........)))))......))).))))))..)))).((((((((((((....))))))))))))...
+FE: -225.400
+
+Solved in: 1/20
+******************** 07-24_16-01 ********************
+Seq Nr.    99, Len: 287, HD:   0, Reward: 1.00000
+S:  AGCGCCAGCCCCCCCCCCCCGCCGCAACCGAAACCCAGCCCCAAACCAAAAACCACCCGCCACGAAACGAGAGCGGGUGGGGGGACUGGGCGGUAAAAAAAAGGGGAAACCCCAACAGCCAAAGACGAGCGGCCAACCAAAAGGAUGACGACCCCAGAAAAAAAAAGGGGUCGUAAAAAACCGAAAACGGUUAACGACCCACCCCGCACCGAAACGGAAGCGGGGAAGGGUCGUGCCGCAAGUAAAAGGAUGUGGGGAAAGAAAAAAAAAAAAAAAGGGGGAUGGCA
+F:  ...((((.(((((.((((........((((...(((((((((..........(((((((((.((...)).).)))))))))))).)))))))))........))))...(((((.((.((....((..(((((((.((....)).))((((((((...........))))))))....(((((....))))).(((((((.((((((.(((...)))..))))))..))))))))))))..))....)).)))))))...................))))).)))).
+T:  ...((((.(((((.((((........((((...(((((((((..........(((((((((.((...)).).)))))))))))).)))))))))........))))...(((((.((.((....((..(((((((.((....)).))((((((((...........))))))))....(((((....))))).(((((((.((((((.(((...)))..))))))..))))))))))))..))....)).)))))))...................))))).)))).
+FE: -132.500
+
+Solved in: 19/20
+******************** 07-24_16-01 ********************
+Seq Nr.     5, Len: 345, HD:   0, Reward: 1.00000
+S:  ACGCCCCCCGGCCCCCACACCAAAACAAAGUAAUGGAAUGGGGGAAAACCCAAAAGGGUAAAAACCCGAAGCGAACCCCAAGAGCAGGCCAAAAGAGGCCUGCAACCACCCCCAAAAAAGGGGGUGGAGACCCACCCCCGCAAAAAGAAGCGGGGGAAAGGGUCUAAAAGGGGAUCGCAACCCACAACGCCGAAAAAAAAAGGCGUUGAAGGGAAACGAAAACCAGCAGCAAGCACCGGCCAAAAAAAGCCGGUGCCUGCGGAAACGUAAAACAACCAAAAGCCAAAAGGCUGACCAGCAAAAAGCAGGUCUCGGGACAAACAACCAAAGUUUGGGGGCGUAAAA
+F:  (((((((....((((((..(((..((...))..)))..))))))...((((....)))).....(((((.((((.((((....(((((((......)))))))..((((((((......))))))))((((((.(((((((........)))))))...))))))....)))).))))..(((.(((((((..........)))))))..)))..(((....((.((((...((((((((........))))))))))))))...)))............((((....))))((((.((.....)).))))))))).(((((.......))))))))))))....
+T:  (((((((....((((((..(((..((...))..)))..))))))...((((....)))).....(((((.((((.((((....(((((((......)))))))..((((((((......))))))))((((((.(((((((........)))))))...))))))....)))).))))..(((.(((((((..........)))))))..)))..(((....((.((((...((((((((........))))))))))))))...)))............((((....))))((((.((.....)).))))))))).(((((.......))))))))))))....
+FE: -172.200
+
+Solved in: 15/20
+******************** 07-24_16-01 ********************
+Seq Nr.     6, Len: 130, HD:   0, Reward: 1.00000
+S:  GCCCGCGACCCCACCCGCCCCCGCGACCACGCGAAGAACCAAAAGAAAAAGGAAUCAAAUCGCAAAGAUCGACGGGACCACCCGAAAAAAUCGGGGGAAAAAAAAAAAGGCGGGAGGGUCGCGGAAAAAA
+F:  ..(((((((((..((((((((((((((...((((.((.((..........))..))...))))...).))).)))).((.(((((.....)))))))...........)))))).)))))))))......
+T:  ..(((((((((..((((((((((((((...((((.((.((..........))..))...))))...).))).)))).((.(((((.....)))))))...........)))))).)))))))))......
+FE: -56.100
+
+Solved in: 6/20
+******************** 07-24_16-01 ********************
+Seq Nr.     7, Len: 117, HD:   0, Reward: 1.00000
+S:  AACCCCCCCCCCGCCGCCGCCCACCCCCAACCAAAAGGUAACGCGAACCAAAGGAAAACGCGUAAGGGGGAGGGAACGGACGGAAACCGGAAAAAUCAAGGUAAGGGGGAGGGAAAA
+F:  ...(((.(((((.(((((((((.(((((.(((....))).(((((..((...))....)))))..))))).)))..))).)))..(((.((....))..)))..))))).)))....
+T:  ...(((.(((((.(((((((((.(((((.(((....))).(((((..((...))....)))))..))))).)))..))).)))..(((.((....))..)))..))))).)))....
+FE: -48.600
+
+Solved in: 15/20
+******************** 07-24_16-01 ********************
+Seq Nr.     8, Len: 425, HD:   0, Reward: 1.00000
+S:  AGCCCCCGCCGAAAAAAAAUUUACGAAACGGGAGGGCCGACCAACACCGAAACACGGACCCCGAACGCCCACCCCCGAACCAAACCCAACCGAGAGGAAAGAAACGCCAAAAGGCGAAGGCCCACAACCAAAAUGGGCCUCUCUCAGAAGGUGGACGGGGGAAAGGGCGUUCGAAAAAAGAAACCCACGGCCAACGACCAAGCAAGCCCAAAAUGGGCUACCAAAAAAGGUACGACCAAGCAGCGAACCCGACCCGCAAACGGGACGGCGCUGCUUUCGAACAAACACCCGAACACCCCCACCCAGAAUGGGUAAAGGGGGUGACGGGUGAAACAACGAGACAAAGUCCGAAAAGGUCGUGGCCGUGGGGGGACCGAAAACGGUAAAGGACGGCCCUACGGCGCACAAAAAGUGCGCCGUAAAAA
+F:  ....((((.((.(((....))).))...))))(((((((.((...((((.....(((.((((((((((((.((((((..(((...((..(.(((((........((((....)))).(((((((.........)))))))))))).)..))))).))))))...)))))))))..........((((((((((.(((((.....((((((...))))))(((......))).(((..((((((((...(((.((((....)))).))))))))))))))......((((((..((((((((((((...)))))...))))))).))))))......((.(((...)))))....)))))))))))))))))).)))....))))...)).)))))))(((((((((.....))))))))).....
+T:  ....((((.((.(((....))).))...))))(((((((.((...((((.....(((.((((((((((((.((((((..(((...((..(.(((((........((((....)))).(((((((.........)))))))))))).)..))))).))))))...)))))))))..........((((((((((.(((((.....((((((...))))))(((......))).(((..((((((((...(((.((((....)))).))))))))))))))......((((((..((((((((((((...)))))...))))))).))))))......((.(((...)))))....)))))))))))))))))).)))....))))...)).)))))))(((((((((.....))))))))).....
+FE: -211.600
+
+Solved in: 4/20

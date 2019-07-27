@@ -1,0 +1,69 @@
+main:
+    model: ACER
+    policy: MlpPolicy
+    n_workers: 1
+    n_steps: 50000
+models:
+    PPO2:
+        gamma: 0.99
+        n_steps: 64
+        ent_coef: 0.01
+        learning_rate: 0.0004
+        vf_coef: 0.5
+        max_grad_norm: 0.5
+        lam: 0.98
+        nminibatches: 4
+        noptepochs: 3
+        cliprange: 0.2
+        full_tensorboard_log: false
+        verbose: 1
+    ACER: 
+        gamma: 0.995
+        n_steps: 20
+        num_procs: 1
+        q_coef: 0.5
+        ent_coef: 0.05
+        max_grad_norm: 10
+        learning_rate: 0.0001
+        lr_schedule: linear
+        rprop_alpha: 0.99
+        rprop_epsilon: 0.0001
+        buffer_size: 5000
+        replay_ratio: 4
+        replay_start: 1000
+        correction_term: 10.0
+        trust_region: true
+        alpha: 0.99
+        delta: 1
+        verbose: 0
+    A2C: {}
+    DDPG: {}
+policies:
+    CnnPolicy: {}
+    CustomCnnPolicy:
+        filters:
+        - 32
+        - 32
+        - 128
+        kernel_size:
+        - 3
+        - 6
+        - 6
+        stride:
+        - 2
+        - 2
+        - 1
+        lstm: []
+        shared: []
+        h_actor:
+        - 128
+        - 64
+        - 32
+        h_critic:
+        - 64
+        - 16
+        activ: relu
+    CustomCnnLstmPolicy: {}
+    MlpPolicy: {}
+        
+

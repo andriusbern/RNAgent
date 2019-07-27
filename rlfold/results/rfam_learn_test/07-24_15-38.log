@@ -1,0 +1,25 @@
+
+******************** 07-24_15-38 ********************
+Seq Nr.    14, Len: 210, HD:   0, Reward: 1.00000
+S:  ACCCCCCCCAGGCCCCCCGCGCAAGCACCCCCGAAAGGGGGAGCUUGAAAAAACCCAACCCCAAAAAAAAUGGGGAAAAUGGGAACACCCAAAACCGCAAAAGAGCAGACCCAAAAAAAAAAAAAACAAAACGAGAACCGCAGAAACUGCGGUAAACUCGAAGGGUCUGCGCGGUAAAAGGGAGUAAAACGCGGGGGCCAAAAAAAAAAA
+F:  ..........(((((((.((((((((.(((((....))))).)))))......((((.(((((.......)))))....)))).((.(((...(((((......((((((((...................((((.(((((((...)))))))...))))..)))))))))))))....))).))....))))))))))...........
+T:  ..........(((((((.((((((((.(((((....))))).)))))......((((.(((((.......)))))....)))).((.(((...(((((......((((((((...................((((.(((((((...)))))))...))))..)))))))))))))....))).))....))))))))))...........
+FE: -90.000
+
+Solved in: 0/1
+******************** 07-24_15-38 ********************
+Seq Nr.    32, Len: 195, HD:   0, Reward: 1.00000
+S:  ACGCCCCCGCCCCCCCCCCGACCCCCCGCCAAAAGGCGGGGGGAAAAAACGCAACCGGAAAAGAAAUCCGGAAAAGCGGGCAACGCCAACCGCAAAACCAACGCCAAAGAAGCCCAACAGGGAAAAAACCCUGUAAAGGGCAAGGCGUAGGAAAAUGCGGAAAAGCGAAGACCAUCGAAAGGGGGGGAAAGGGGC
+F:  ..(((((...(((((((.((((((((((((....)))))))))......(((..(((((.......)))))....)))(((..(((...(((((...((.(((((......((((.((((((......))))))...))))..))))).))....)))))....)))..).)).)))...)))))))...)))))
+T:  ..(((((...(((((((.((((((((((((....)))))))))......(((..(((((.......)))))....)))(((..(((...(((((...((.(((((......((((.((((((......))))))...))))..))))).))....)))))....)))..).)).)))...)))))))...)))))
+FE: -99.100
+
+Solved in: 0/1
+******************** 07-24_15-38 ********************
+Seq Nr.    90, Len: 125, HD:   0, Reward: 1.00000
+S:  ACCCCCGCCCGCCCCCCCGCCAACCACCGCCACCCACCGAAAACGAAAACGCGACCCGACCCACAAACAAAAGGGGUCGGGACGCGCGGUGGGAGGCGGUGGAUGAAGGAGGAGCGGGCGGGGAA
+F:  ..((((((((((.((.((..((.((((((((.(((((((..........((((.((((((((.(........))))))))).))))))))))).)))))))).))..)).)).))))))))))..
+T:  ..((((((((((.((.((..((.((((((((.(((((((..........((((.((((((((.(........))))))))).))))))))))).)))))))).))..)).)).))))))))))..
+FE: -89.700
+
+Solved in: 0/1

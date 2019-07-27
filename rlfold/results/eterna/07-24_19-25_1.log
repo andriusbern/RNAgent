@@ -1,0 +1,10 @@
+Dataset: eterna, date: 07-24_19-25, solved 1/100 sequences with 10 eval budget.
+====================================================================================================
+
+******************** 07-24_19-25 ********************
+Seq Nr.    63, Len: 201, HD:   0, Reward: 1.00000
+S:  ACCCCCCCCCCCCCCCCCCCCCCCAACCCAAAAACUUGAAUGGGGAAAAAGGGGGGGAGGGAAAAAAGGGGUACACCCCACCCCCACCCCCCCCCCCCACAAAAAUGAAGGGGAGAGGAAAGUGGGAAAAAAAAAAGAAGGGGUGUCCACAAAAAAACUUUGUGACCAAAACACACACAAAAAAAAUUUUGUGUGUAAAAA
+F:  (((((((((((((((.....(((((...(((....)))..))))).....))))))).)))......)))))(((((((..((((((.((.(.((((..((....))..)))).).))...)))))..........)..))))))).((((((.....))))))........((((((((((....)))))))))).....
+T:  (((((((((((((((.....(((((...(((....)))..))))).....))))))).)))......)))))(((((((..((((((.((.(.((((..((....))..)))).).))...)))))..........)..))))))).((((((.....))))))........((((((((((....)))))))))).....
+FE: -80.200
+Solved in: 1/10
