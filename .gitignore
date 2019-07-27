@@ -4,5 +4,5 @@ rlfold/analysis
 rlfold/notes.md
 
 rlfold.egg-info
-*/__pycache__
+*/__pycache__/*
 .vscode
