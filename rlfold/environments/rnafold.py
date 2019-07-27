@@ -61,7 +61,7 @@ class RnaDesign(gym.Env):
         self.action_space = gym.spaces.Discrete(4)
 
         if self.use_full_state:
-            self.observation_space = gym.spaces.Box(shape=(5, self.kernel_size*2, 1), low=0, high=1)
+            self.observation_space = gym.spaces.Box(shape=(6, self.kernel_size*2, 1), low=0, high=1)
         else:
             self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1)
 
@@ -169,24 +169,24 @@ class RnaDesign(gym.Env):
             self.reset()
             while not self.done:
                 action = self.action_space.sample()
-                _, _, self.done, _ = self.step(action)
+                image, _, self.done, _ = self.step(action)
                 if self.use_full_state:
-                    start = np.clip(self.solution.current_nucleotide - self.solution.kernel_size, 
-                                    0, self.target.len - self.solution.kernel_size*2-1)
-                    image = np.vstack([self.target.bin, self.solution.mat.squeeze()])
                     image *= 120
-                    image[:, self.solution.current_nucleotide] = 100
-                    image[:,start] = 255
-                    image[:,start+self.solution.kernel_size*2] = 255
+                    # image[:, self.solution.current_nucleotide] = 100
+                    # image[:,start] = 255
+                    # image[:,start+self.solution.kernel_size*2] = 255
                     print(colorize_nucleotides(self.solution.string), end='\r')
                 im = np.asarray(image, dtype=np.uint8)
                 cv2.imshow(name, im)
-                cv2.waitKey(10)
+                cv2.waitKey(100)
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
         cv2.destroyWindow(name)
 
+    def speed_test(self):
+        """
+        """
 
 if __name__ == "__main__":
     env = RnaDesign()

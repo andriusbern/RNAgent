@@ -1,5 +1,5 @@
 rlfold/trained_models
-rlfold/data
+rlfold/data/rfam_learn_train
 rlfold/analysis
 rlfold/notes.md
 rlfold/algorithms

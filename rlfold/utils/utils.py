@@ -11,12 +11,12 @@ def load_sequence(num, dataset='rfam_learn_train'):
     print('Loading sequence #{}...'.format(num), end='\r')
     path = os.path.join(settings.DATA, dataset)
     filename = os.path.join(path, '{}.rna'.format(num))
-    try:
-        with open(filename, 'r') as f:
-            seq = f.readline()[:-1]
-        return Sequence(seq, filename, num)
-    except:
-        return []
+    # try:
+    with open(filename, 'r') as f:
+        seq = f.readline()[:-1]
+    return Sequence(seq, filename, num)
+    # except:
+    #     return []
     
 def load_length_metadata(dataset, length):
     filename = os.path.join(settings.DATA, 'metadata', dataset, 'len', '{}.yml'.format(length))
@@ -75,7 +75,6 @@ class Dataset(object):
 
         if sequences is not None:
             self.sequences = sequences
-        
         elif sequences is None and length is None:
             self.sequences = [load_sequence(x) for x in range(start, start+n_seqs)]
             self.sequences = [x for x in self.sequences if x is not None]
@@ -158,8 +157,8 @@ class Sequence(object):
         self.loops = self.find_loops()
         self.n_loops = len(self.loops)
         self.paired_sites = self.find_complementary()
-        # self.mat = self.to_matrix()
-    
+        self.mat = self.to_matrix()
+        
     def __repr__(self):
         return self.seq
 
@@ -175,13 +174,13 @@ class Sequence(object):
         """
         Convert the current sequence into a matrix format:
 
-        ..((..))..  ==>
-        1100110011
-        0011000000
+        ..((..))..  ---.
+        1100110011     |
+        0011000000 <---`
         0000001100
         """
-        mapping = {'.': 0, '(':1, ')':2}
-        matrix = np.zeros([3, self.len])
+        mapping = {'.': 0, '(':1, ')':1}
+        matrix = np.zeros([2, self.len])
         for i in range(self.len):
             matrix[mapping[self.seq[i]], i] = 1
 
@@ -282,6 +281,10 @@ class Solution(object):
         self.folded = None
         self.str = None
         self.use_full_state = self.config['full_state']
+        if 'use_padding' in self.config.keys():
+            self.use_padding = self.config['use_padding']
+        else:
+            self.use_padding = True
 
         # Statistics
         self.solution_id = settings.get_solution_id()
@@ -290,8 +293,9 @@ class Solution(object):
         self.r = 0
         self.folded_design = ''
         self.reward_exp = config['reward_exp']
-        self.current_nucleotide = 0
         self.kernel_size = config['kernel_size']
+        self.current_nucleotide = 0
+        self.padded_index = self.kernel_size
         self.get_representations()
     
     @property
@@ -300,14 +304,34 @@ class Solution(object):
         Returns the nucleotide sequence of the solution in string format
         """
         return ''.join(self.str)
+    
+    @property
+    def matrix(self):
+        """
+        Returns the matrix representation of the current solution without padding
+        """
+        if self.use_padding:
+            return self.mat[:, self.kernel_size:-self.kernel_size]
+        else:
+            return self.mat
 
     def get_representations(self):
         """
         Generate the representations of the nucleotide sequence of required length based on the the target structure
         """
-        self.mat = np.zeros([4, self.target.len]) # One-hot representation of the generated nucleotide sequence
-        self.bin = np.zeros([1, self.target.len]).squeeze() # A numerical representation of the nucleotide sequence [0, 1, 3, 2, 4...]
-        self.str = ['-'] * self.target.len # List of chars ['-', 'A', "C", "G", "U"]
+        if self.use_padding:
+            k = self.kernel_size
+            size, length = self.target.mat.shape
+            self.mat = np.zeros([4, length + k * 2])
+            self.str = ['-'] * length
+            # Padded target sequence
+            self.ptarget = np.zeros([size, length + k * 2])
+            self.ptarget[:,k:-k] = self.target.mat
+        else:
+            self.mat = np.zeros([4, self.target.len]) # One-hot representation of the generated nucleotide sequence
+            self.bin = np.zeros([1, self.target.len]).squeeze() # A numerical representation of the nucleotide sequence [0, 1, 3, 2, 4...]
+            self.str = ['-'] * self.target.len # List of chars ['-', 'A', "C", "G", "U"]
+
 
     def binary_action(self, action):
         """
@@ -324,6 +348,7 @@ class Solution(object):
         if self.target.seq[self.current_nucleotide] == '(':
             pair = self.target.paired_sites[self.current_nucleotide]
             self.str[pair] = self.mapping[self.reverse_action[action]]
+        
 
     def matrix_action(self, action):
         """
@@ -333,11 +358,14 @@ class Solution(object):
         pair the opposing closing bracket with an opposing nucleotide
 
         """
-        self.mat[action, self.current_nucleotide] = 1
+        ind1 = self.padded_index
+        ind2 = self.current_nucleotide
 
-        if self.target.seq[self.current_nucleotide] == '(':
-            pair = self.target.paired_sites[self.current_nucleotide]
-            index = self.reverse_action[action]
+        self.mat[action, ind1] = 1
+
+        if self.target.seq[ind2] == '(':
+            pair = self.target.paired_sites[ind2] + self.kernel_size
+            index = self.reverse_action[action] 
             self.mat[index, pair] = 1
     
     def action(self, action):
@@ -359,6 +387,7 @@ class Solution(object):
             count += 1
         
         self.current_nucleotide += count
+        self.padded_index += count
 
     def hamming_distance(self, seq1, seq2):
         matches = [char1 != char2 for char1, char2 in zip(seq1, seq2)]
@@ -377,24 +406,19 @@ class Solution(object):
             print('\nHamming distance: {}\n'.format(r))
         return r
     
-    def get_state(self, use_padding=False):
+    def get_state(self, reshape=False):
         """
         Return the current state of the solution (window around the current nucleotide)
         """
 
-        if use_padding:
-            margin1 = self.kernel_size - self.current_nucleotide
-            margin2 = self.current_nucleotide - self.target.len
-            if margin1 > 0:
-                end = self.kernel_size - margin1
-                current = self.mat[:, :end]
-                target  = self.target.bin[:end]
-                state = np.vstack([target, current])
-                padding = np.zeros([5, margin1])
-                state = np.hstack([padding, state])
+        if self.use_padding:
+            start, end = self.padded_index - self.kernel_size, self.padded_index + self.kernel_size
+            state = np.vstack([self.ptarget[:, start:end], self.mat[:, start:end]])
 
-            elif margin2 > 0:
-                start = self.target.len - margin2
+            if reshape:
+                state = np.reshape
+            else:
+                state = np.expand_dims(state, axis=2)
 
 
         else:
@@ -417,7 +441,7 @@ class Solution(object):
         """
         date = datetime.datetime.now().strftime("%m-%d_%H-%M")
         separator = '\n\n' + ''.join(["*"] * 20) + ' ' + date + ' ' + ''.join(["*"] * 20)
-        header = '\n\nSeq Nr. {:5}, Len: {:3}, HD: {:3}, Reward: {:.5f}'.format(self.target.file_nr, self.target.len, self.hd, self.r)
+        header = '\n\nSeq Nr. {:5}, Len: {:3}, DBr: {:.2f}, HD: {:3}, Reward: {:.5f}'.format(self.target.file_nr, self.target.len, self.target.db_ratio, self.hd, self.r)
 
         solution = 'S:  ' + self.string
         folded   = 'F:  ' + self.folded_design

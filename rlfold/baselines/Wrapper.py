@@ -385,7 +385,7 @@ class SBWrapper(object):
             config = dict(
                 total_timesteps=steps if steps is not None else self.n_steps,
                 tb_log_name=self._unique[:-2],
-                reset_num_timesteps=not self.reloaded,
+                reset_num_timesteps=False,
                 seed=self.config['main']['seed'])
 
             self.reloaded = True
