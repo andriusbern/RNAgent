@@ -48,10 +48,10 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
     Creates a corresponding vectorized environment
     """
 
-    def make_rna(**kwargs):
+    def make_rna(rank, **kwargs):
         def _init():
             env_obj = getattr(rlfold.environments, env_name)
-            env = env_obj(config)
+            env = env_obj(config, rank)
             return env
         return _init
 
@@ -83,7 +83,10 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
 
     # Parallelize
     if n_workers > 1:
-        vectorized = SubprocVecEnv(envs, start_method='fork')
+        if settings.os == 'linux':
+            vectorized = SubprocVecEnv(envs, start_method='fork')
+        elif settings.os == 'win32':
+            vectorized = SubprocVecEnv(envs, start_method='spawn')
     else:
         # Non multi-processing env
         vectorized = DummyVecEnv(envs)
@@ -132,8 +135,6 @@ def get_parameters(env_name, model_path=None, config_name=None, config_location=
     # # Learning rate interpolation 
     # if not isinstance(config['model']['learning_rate'], list):
     #     config['model']['learning_rate'] = LinearSchedule(10000, 20, 10).value
-
-
     return config
 
 class SBWrapper(object):
@@ -167,6 +168,7 @@ class SBWrapper(object):
         """
         Load a saved model either from the 
         """
+
         import glob
         assert os.path.isdir(self._env_path), 'Path {} does not exist.'.format(self._env_path)
 
@@ -176,7 +178,8 @@ class SBWrapper(object):
         else:
             for folder in folder_list:
                 if num is not None:
-                    if int(folder.split('/')[-1].split('_')[0]) == num:
+                    print(folder.split(settings.delimiter))
+                    if int(folder.split(settings.delimiter)[-1].split('_')[0]) == num:
                         model_path = folder
                         if not os.path.isfile(os.path.join(model_path, 'model.pkl')):
                             model_path = model_path[:-1] + '1'
@@ -184,8 +187,8 @@ class SBWrapper(object):
                         break
                 if path is not None:
                     print(folder)
-                    print(folder.split('/')[-1])
-                    if folder.split('/')[-1] == path:
+                    print(folder.split(settings.delimiter)[-1])
+                    if folder.split(settings.delimiter)[-1] == path:
                         model_path = folder
 
 
@@ -196,7 +199,7 @@ class SBWrapper(object):
         self.n_steps = self.config['main']['n_steps']
         model_file = os.path.join(model_path, 'model.pkl')
         model_object = getattr(stable_baselines, self.config['main']['model'])
-        self._unique = model_path.split('/')[-1]
+        self._unique = model_path.split(settings.delimiter)[-1]
         print('Unique: {}'.format(self._unique))
         
         self.create_env()

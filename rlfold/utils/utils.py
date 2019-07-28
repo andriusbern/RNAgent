@@ -1,11 +1,17 @@
-import RNA
 import numpy as np
 import rlfold.settings as settings
 import os, random
 import matplotlib.pyplot as plt
 import copy, datetime, yaml
 
-plt.ion()
+if settings.os == 'linux':
+    import RNA
+    fold_fn = RNA.fold
+elif settings.os == 'win32':
+    from .vienna import fold
+    fold_fn = fold
+
+# plt.ion()
 
 def load_sequence(num, dataset='rfam_learn_train'):
     print('Loading sequence #{}...'.format(num), end='\r')

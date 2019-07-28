@@ -1,8 +1,8 @@
 main:
     model: PPO2
     policy: CustomCnnPolicy
-    n_workers: 2
-    n_steps: 2000000
+    n_workers: 1
+    n_steps: 2500000
     multi_discrete: false
     frame_stack: 0
     seed: 1
