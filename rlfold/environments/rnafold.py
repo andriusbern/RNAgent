@@ -1,6 +1,5 @@
 import sys
-sys.path.append('/usr/local/lib/python3.6/site-packages')
-import RNA
+# sys.path.append('/usr/local/lib/python3.6/site-packages')
 import numpy as np
 from rlfold.utils import Dataset, Solution, Sequence
 import gym, time, os, random
@@ -17,9 +16,10 @@ TODO:
 """
 
 class RnaDesign(gym.Env):
-    def __init__(self, config=None):
+    def __init__(self, config=None, rank=None):
 
         self.config = config['environment']
+        self.env_id = rank
         print(self.config)
 
         # Mappings
@@ -61,9 +61,9 @@ class RnaDesign(gym.Env):
         self.action_space = gym.spaces.Discrete(4)
 
         if self.use_full_state:
-            self.observation_space = gym.spaces.Box(shape=(6, self.kernel_size*2, 1), low=0, high=1)
+            self.observation_space = gym.spaces.Box(shape=(6, self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
         else:
-            self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1)
+            self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1, dtype=np.uint8)
 
     def next_target(self, r=True):
 
@@ -84,7 +84,7 @@ class RnaDesign(gym.Env):
         self.solution.matrix_action(action)
 
         if self.solution.current_nucleotide == self.target.len - 1:
-            self.solution.r = self.r = self.solution.evaluate()
+            self.solution.r = self.r = self.solution.evaluate(self.env_id)
             self.done = True
         else:
             self.solution.find_next_unfilled()
@@ -175,18 +175,31 @@ class RnaDesign(gym.Env):
                     # image[:, self.solution.current_nucleotide] = 100
                     # image[:,start] = 255
                     # image[:,start+self.solution.kernel_size*2] = 255
-                    print(colorize_nucleotides(self.solution.string), end='\r')
+                    print(self.solution.string, end='\r')
                 im = np.asarray(image, dtype=np.uint8)
                 cv2.imshow(name, im)
-                cv2.waitKey(100)
+                cv2.waitKey(1)
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
         cv2.destroyWindow(name)
 
     def speed_test(self):
+
         """
         """
+        for _ in range(1000):
+            self.reset()
+            while not self.done:
+                action = self.action_space.sample()
+                image, _, self.done, _ = self.step(action)
+
+                    # image[:, self.solution.current_nucleotide] = 100
+                    # image[:,start] = 255
+                    # image[:,start+self.solution.kernel_size*2] = 255
 
 if __name__ == "__main__":
-    env = RnaDesign()
+    from rlfold.baselines import SBWrapper, get_parameters
+    env = RnaDesign(get_parameters('RnaDesign'))
+    env.speed_test()
+

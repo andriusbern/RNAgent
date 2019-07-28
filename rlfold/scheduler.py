@@ -20,19 +20,21 @@ def run_experiment(env_name, parameter_folder , result_folder, verbose=False):
     models = []
 
     parameter_dir = os.path.join(settings.CONFIG, parameter_folder)
-    for param_file in os.listdir(parameter_dir):
+    for i, param_file in enumerate(os.listdir(parameter_dir)):
         parameters = os.path.join(parameter_dir, param_file)
-        models.append(SBWrapper(env_name, subdir=result_folder).create_model(config_location=parameters))
-    # models[0]._tensorboard()
-
-    for i, model in enumerate(models):
         sep = '\n' +'='*50 + '\n'
         print(sep, 'Training model Nr {}/{}...\n'.format(i+1, len(models)))
         t0 = time.time()
+        model = SBWrapper(env_name, subdir=result_folder).create_model(config_location=parameters)
+        steps = model.config['main']['n_steps']
         model.train()
         t = time.time() - t0
-        steps = model.config['main']['n_steps']
         print('\n\nTraining time: {:2f} min, steps/s: {}'.format(t/60, float(steps)/t), sep)
+
+    # models[0]._tensorboard()
+        
+        
+        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

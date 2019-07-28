@@ -3,6 +3,7 @@ rlfold/data/rfam_learn_train
 rlfold/analysis
 rlfold/notes.md
 rlfold/algorithms
+rlfold/results/*.rna
 
 rlfold.egg-info
 .vscode
