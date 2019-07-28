@@ -10,12 +10,12 @@ models:
     PPO2:
         gamma: 1
         n_steps: 256
-        ent_coef: 0.0001
-        learning_rate: 1.0e-05
-        vf_coef: 0.4
+        ent_coef: 0.01
+        learning_rate: 0.9e-04
+        vf_coef: 0.5
         max_grad_norm: 0.5
         lam: 0.95
-        nminibatches: 8
+        nminibatches: 4
         noptepochs: 3
         cliprange: 0.1
         full_tensorboard_log: false
@@ -24,23 +24,22 @@ policies:
     CnnPolicy: {}
     CustomCnnPolicy: 
         filters:
-        - 32
-        - 48
-        - 32
+        - 8
+        - 128
+        - 8
         kernel_size:
-        -   - 3
-            - 17
-        -   - 3
-            - 5
+        -   - 6
+            - 1
         -   - 1
-            - 5
+            - 25
+        -   - 1
+            - 15
         stride:
         - 1
         - 1
         - 1
         lstm: []
         shared:
-        - 128
         - 128
         h_actor:
         - 32
@@ -54,16 +53,18 @@ policies:
     CustomCnnLstmPolicy: {}
     MlpPolicy: {}
 environment:
-    kernel_size: 35
+    kernel_size: 36
     reward_exp: 9
     full_state: true
     write_threshold: 0
     meta_learning: true
     seq_len:
         - 100
+        - 125
         - 150
+        - 175
         - 200
-    seq_count: 120
+    seq_count: 200
     seq_nr: 0
     randomize: true
 

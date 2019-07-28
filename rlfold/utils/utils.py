@@ -64,19 +64,19 @@ class Dataset(object):
         if length is not None:
             if isinstance(length, int):
                 length_indices = load_length_metadata(dataset, length)
-                self.sequences = [load_sequence(x) for x in length_indices[:n_seqs]]
+                self.sequences = [load_sequence(x, dataset=dataset) for x in length_indices[:n_seqs]]
             if isinstance(length, list):
                 self.sequences = []
                 print(length)
                 for l in length:
                     print('\n\n', l)
                     length_indices = load_length_metadata(dataset, l)    
-                    self.sequences += [load_sequence(x) for x in length_indices[:n_seqs]]
+                    self.sequences += [load_sequence(x, dataset=dataset) for x in length_indices[:n_seqs]]
 
         if sequences is not None:
             self.sequences = sequences
         elif sequences is None and length is None:
-            self.sequences = [load_sequence(x) for x in range(start, start+n_seqs)]
+            self.sequences = [load_sequence(x, dataset=dataset) for x in range(start, start+n_seqs)]
             self.sequences = [x for x in self.sequences if x is not None]
         self.n_seqs = len(self.sequences)
         self.current_index = -1
@@ -319,6 +319,7 @@ class Solution(object):
         """
         Generate the representations of the nucleotide sequence of required length based on the the target structure
         """
+        self.hd = 100
         if self.use_padding:
             k = self.kernel_size
             size, length = self.target.mat.shape
@@ -392,14 +393,22 @@ class Solution(object):
     def hamming_distance(self, seq1, seq2):
         matches = [char1 != char2 for char1, char2 in zip(seq1, seq2)]
         self.hd = sum(matches)
-        return self.hd
+        indices = np.where(matches)[0]
+        return self.hd, indices
 
-    def evaluate(self, verbose=False):
+    def evaluate(self, string=None, verbose=False, permute=True):
         """
         Evaluate the current solution, measure the hamming distance between the folded structure and the target
         """
-        self.folded_design, self.fe = RNA.fold(self.string)
-        self.hd = self.hamming_distance(self.target.seq, self.folded_design)
+        if string is None: string = self.string
+        self.folded_design, self.fe = RNA.fold(string)
+        self.hd, indices = self.hamming_distance(self.target.seq, self.folded_design)
+
+        if permute and self.hd <= 5 and self.hd > 0:
+            self.str = self.local_improvement(indices)
+            self.folded_design, self.fe = RNA.fold(self.string)
+            self.hd, indices = self.hamming_distance(self.target.seq, self.folded_design)
+
         r = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
         if verbose:
             print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design, self.target.seq))
@@ -435,6 +444,51 @@ class Solution(object):
                 state = np.expand_dims(state, axis=2)
         return state
     
+    def local_improvement(self, indices, budget=50, surroundings=True):
+        """
+        Performs a local improvement on the mismatch sites 
+        """
+        # print('Permuting\n')
+        r = self.r
+        step = 0
+
+        if surroundings:
+            all_indices = copy.deepcopy(list(indices))
+            window = [1,2]
+            for index in indices:
+                for i in window:
+                    if index - i >= 0:
+                        all_indices.append(index-i)
+                    if index + i <= self.target.len -1:
+                        all_indices.append(index+i)
+        else:
+            all_indices = indices
+
+        while r != 1 and step < budget:
+            print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
+            permutation = copy.deepcopy(self.str)
+            for mismatch in all_indices:
+                if mismatch in self.target.paired_sites.keys():
+                    pair = self.target.paired_sites[mismatch]
+                else:
+                    pair = None
+
+                action = random.randint(0, 3)
+                permutation[mismatch] = self.mapping[action]
+                if pair is not None:
+                    permutation[pair] = self.mapping[self.reverse_action[action]]
+
+            string = ''.join(permutation)
+            r = self.evaluate(string, permute=False)
+            step += 1
+            # mm1, mm2 = highlight_mismatches(string, self.string)
+            # print(mm1)
+            # print(mm2)
+        if r == 1:
+            print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
+        # else: print('Could not find valid permutation')
+        return permutation
+
     def summary(self, print_output=False, colorize=True):
         """
         Formatted summary of the solution

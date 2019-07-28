@@ -103,7 +103,8 @@ class RnaDesign(gym.Env):
         if self.solution.hd <= self.config['write_threshold']:
             self.solution.write_solution()
             self.good_solutions.append(self.solution)
-        print('Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(self.ep, self.target.file_nr, self.target.len, self.r, self.solution.hd, self.lhd), end='\r')
+        print('                                    Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'
+            .format(self.ep, self.target.file_nr, self.target.len, self.r, self.solution.hd, self.lhd), end='\r')
         
         self.state = self.solution.get_state()
         if self.meta_learning:

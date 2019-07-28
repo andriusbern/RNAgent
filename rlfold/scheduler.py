@@ -20,12 +20,9 @@ def run_experiment(env_name, parameter_folder , result_folder, verbose=False):
     models = []
 
     parameter_dir = os.path.join(settings.CONFIG, parameter_folder)
-    for param_file in os.listdir(parameter_dir):
+    for i, param_file in enumerate(os.listdir(parameter_dir)):
         parameters = os.path.join(parameter_dir, param_file)
-        models.append(SBWrapper(env_name, subdir=result_folder).create_model(config_location=parameters))
-    # models[0]._tensorboard()
-
-    for i, model in enumerate(models):
+        model = SBWrapper(env_name, subdir=result_folder).create_model(config_location=parameters)
         sep = '\n' +'='*50 + '\n'
         print(sep, 'Training model Nr {}/{}...\n'.format(i+1, len(models)))
         t0 = time.time()

@@ -487,6 +487,7 @@ class SBWrapper(object):
         solved = []
         
         for n, seq in enumerate(d.sequences):
+            print(n, '\n')
             get_seq()
             end = False
             for b in range(budget):
