@@ -1,23 +1,25 @@
 import os, subprocess
 import rlfold.settings as settings
 
-
 def fold(sequence, worker):
-
+    """
+    Call RNAfold.exe using subprocess and return 
+    the folded secondary structure sequence and its free energy
+    """
     path = os.path.join(settings.RESULTS, 'input{}.rna'.format(worker))
     write_file(sequence, path)
     command = 'RNAfold.exe --infile {} --noPS'.format(path)
-    c = subprocess.Popen(command.split(), cwd=settings.VIENNA_DIR, shell=True, stdout=subprocess.PIPE)
-    u = c.communicate()[0].decode("utf-8")
-    u = u.split('\n')[1].split(' ')
-    fold = u[0]
-    fe = u[1].split(')')[0].split('(')[1]
-    if isinstance(fe, str):
-        fe = 0.000
-    # output = subprocess.getoutput(vpath)
-    # print(output)
-    # print(fold, fe)
-    return fold, fe
+    output = subprocess.Popen(command.split(), cwd=settings.VIENNA_DIR, shell=True, stdout=subprocess.PIPE)
+    message = output.communicate()[0].decode("utf-8")
+    message = message.split('\n')[1].split(' ')
+    secondary_structure = message[0]
+    free_energy = message[1].split(')')[0].split('(')[1]
+    try:
+        free_energy = float(free_energy)
+    except:
+        free_energy = 0.000
+    
+    return secondary_structure, free_energy
 
 def write_file(seq, path):
     """

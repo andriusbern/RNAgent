@@ -50,10 +50,9 @@ def custom_cnn(scaled_images, params, **kwargs):
     s = params
     activ = getattr(tf.nn, s.activ)
     init_scale = s.conv_init_scale
-    print(s.kernel_size)
     # First layer
     # odb = True if s.kernel_size[0][1] == 1 else False
-    odb = False
+    odb = True
     print('First: {}, odb: {}'.format(s.kernel_size[0], odb))
     out = activ(conv(scaled_images, 'c0', n_filters=s.filters[0], filter_size=s.kernel_size[0], stride=s.stride[0], init_scale=init_scale, one_dim_bias=odb, **kwargs))
     # Following layers

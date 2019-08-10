@@ -1,12 +1,6 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
 import sys
-import rusher.settings as settings
-from rusher.interface import EnvDisplay, Graphs, Tables, BaselinesControl, Leaderboard
 import gym
-from stable_baselines.common.vec_env import SubprocVecEnv, DummyVecEnv, VecFrameStack
-# from rusher.environments import RusherStack, RusherMiniDiscrete
-from rusher.baselines import BaselinesWrapper
-from rusher.baselines.BaselinesWrapper import get_env_type
 import stable_baselines
 import webbrowser, os, yaml
 

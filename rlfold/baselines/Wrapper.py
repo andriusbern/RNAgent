@@ -10,6 +10,7 @@ import stable_baselines, gym, rlfold #,# pybullet_envs, rusher, nao_rl
 from stable_baselines import PPO2, GAIL
 from matplotlib.animation import FuncAnimation
 import cv2
+from rlfold.interface import show_rna, create_browser
 
 # Local
 from rlfold.utils import Sequence, Dataset
@@ -306,7 +307,7 @@ class SBWrapper(object):
 
         c = self.config['main']
         ce = self.config['environment']
-        dir_name = "{}_{}_SL{}_SC{}_{}_1".format(c['model'], c['n_workers'], ce['seq_len'], ce['seq_count'], self.date) # Unique stamp
+        dir_name = "{}_{}_SL{}_SC{}_{}_1".format(c['model'], c['n_workers'], str(100), ce['seq_count'], self.date) # Unique stamp
         self._unique = str(num + 1) + '_' + dir_name # Unique identifier of this model
         self._model_path = os.path.join(self._env_path, self._unique) # trained_models/env_type/env/trainID_uniquestamp
 
@@ -432,7 +433,7 @@ class SBWrapper(object):
                 plt.cla(); plt.imshow(img); plt.show(); plt.pause(delay)
         self.model.set_env(self.env)
     
-    def inverse_fold(self, target, budget=100):
+    def inverse_fold(self, target, budget=20):
         """
         Method for using the model to generate a nucleotide sequence
         solution given a target dot-bracket sequence
@@ -479,32 +480,58 @@ class SBWrapper(object):
                 if self.done[0]:
                     s.summary(True)
 
-    def evaluate_testset(self, dataset='rfam_learn_test', budget=100):
+    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=True, show=False, pause=0):
+        """
+        Run
+        """
+        # driver = webdriver.Chrome('/home/andrius/chromedriver')
+        if show:
+            driver = create_browser('double')
         self.model.set_env(self.test_env)
-        d = Dataset(dataset=dataset, start=1, n_seqs=100)
+        n_seqs=29 if dataset=='rfam_taneda' else 100
+        
+        d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
         self.model.env.set_attr('dataset', d)
         self.model.env.set_attr('randomize', False)
         self.model.env.set_attr('meta_learning', False)
         get_seq = self.model.env.get_attr('next_target')[0]
+        self.model.env.set_attr('current_sequence', 0)
+        # self.config['testing']['permute'] = True
+        if permute:
+            self.model.env.set_attr('permute', True)
+
         self.test_state = self.model.env.reset()
         solved = []
         
         for n, seq in enumerate(d.sequences):
             print(n, '\n')
             get_seq()
+            target = self.model.env.get_attr('target')[0]
+            if show:
+                show_rna(target.seq, 'AUAUAU', driver, 0)
+                time.sleep(pause)
             end = False
+            ep = 0
             for b in range(budget):
                 self.done = [False]
-                episode_buffer = []
                 while not self.done[0]:
                     action, _ = self.model.predict(self.test_state)
                     self.test_state, _, self.done, _ = self.model.env.step(action)
                     s = self.model.env.get_attr('prev_solution')[0]
-                    if self.done[0] and s.hd <= 0:
-                        s.summary(True)
-                        solved.append([n, s, b+1, budget])
-                        print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
-                        end = True
+                    
+                    if self.done[0]:
+                        if show and ep%1==0:
+                            show_rna(s.folded_design, s.string, driver, 1)
+                            
+                            time.sleep(pause)
+                        if s.hd <= 0:
+                            s.summary(True)
+                            solved.append([n, s, b+1, budget])
+                            print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
+                            end = True
+                            ep += 1
+                            # if show:
+                            #     show_rna(s.target.seq, s.string, driver, 0, 'display')
                 if end: break
         print('Solved ', len(solved), '/', len(d.sequences))
 
@@ -525,6 +552,7 @@ class SBWrapper(object):
 
             msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
                     dataset.dataset, date, len(results), dataset.n_seqs, budget)
+            # msg += 100 * 
             msg += ''.join(['=']*100) + '\n'
             f.write(msg)    
         
@@ -536,7 +564,7 @@ class SBWrapper(object):
 
         
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
     env = 'MountainCarContinuous-v0'
     b = SBWrapper(env)
     b.create_model()

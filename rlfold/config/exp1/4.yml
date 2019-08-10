@@ -1,7 +1,7 @@
 main:
     model: PPO2
     policy: CustomCnnPolicy
-    n_workers: 1
+    n_workers: 2
     n_steps: 2500000
     multi_discrete: false
     frame_stack: 0
@@ -9,13 +9,13 @@ main:
 models:
     PPO2:
         gamma: 1
-        n_steps: 256
-        ent_coef: 0.01
+        n_steps: 512
+        ent_coef: 0.002
         learning_rate: 0.9e-04
         vf_coef: 0.5
         max_grad_norm: 0.5
         lam: 0.95
-        nminibatches: 4
+        nminibatches: 8
         noptepochs: 3
         cliprange: 0.1
         full_tensorboard_log: false
@@ -24,25 +24,33 @@ policies:
     CnnPolicy: {}
     CustomCnnPolicy: 
         filters:
-        - 8
+        - 12
+        - 256
         - 128
-        - 8
+        - 16
         kernel_size:
-        -   - 6
-            - 1
-        -   - 1
-            - 25
-        -   - 1
-            - 15
+        # - - 6
+        - - 6
+          - 1
+        - - 1
+          - 25
+        - - 1
+          - 10
+        - - 1
+          - 5
+        # - - 1
+        #   - 5
         stride:
+        - 1
         - 1
         - 1
         - 1
         lstm: []
         shared:
+        - 256
         - 128
         h_actor:
-        - 32
+        - 64
         h_critic:
         - 16
         activ: relu
@@ -53,30 +61,70 @@ policies:
     CustomCnnLstmPolicy: {}
     MlpPolicy: {}
 environment:
-    kernel_size: 36
+    kernel_size: 40
     reward_exp: 9
     full_state: true
     write_threshold: 0
     meta_learning: true
     seq_len:
+        - 61
+        - 62
+        - 63
+        - 64
+        - 65
+        - 66
+        - 67
+        - 68
+        - 69
+        - 70
+        - 71
+        - 72
+        - 73
+        - 74
+        - 75
+        - 76
+        - 77
+        - 78
+        - 79
         - 80
+        - 81
+        - 82
+        - 83
+        - 84
+        - 85
+        - 86
+        - 87
+        - 88
+        - 89
         - 90
+        - 91
+        - 92
+        - 93
+        - 94
+        - 95
+        - 96
+        - 97
+        - 98
+        - 99
+        - 100
+        - 101
+        - 102
+        - 103
+        - 104
+        - 105
+        - 106
+        - 107
+        - 108
+        - 109
         - 110
-        - 120
-        - 130
-        - 140
-        - 150
-        - 160
-        - 170
-        - 180
-        - 190
-        - 200
-        - 210
-        - 220
-        - 230
-        - 240
-        - 250
-    seq_count: 20
+        - 111
+        - 112
+        - 113
+        - 114
+    seq_count: 200
     seq_nr: 0
     randomize: true
+
+testing:
+
 

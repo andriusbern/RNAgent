@@ -1,12 +1,12 @@
 import sys
 # sys.path.append('/usr/local/lib/python3.6/site-packages')
 import numpy as np
-from rlfold.utils import Dataset, Solution, Sequence
+from rlfold.utils import Dataset, Solution, Sequence#, Tester
 import gym, time, os, random
 import cv2
 import rlfold.settings as settings
 from rlfold.utils import colorize_nucleotides
-
+from rlfold.interface import create_browser, show_rna
 
 """
 TODO:
@@ -20,35 +20,31 @@ class RnaDesign(gym.Env):
 
         self.config = config['environment']
         self.env_id = rank
-        print(self.config)
-
-        # Mappings
-        self.mapping = {0:'A', 1:'C', 2:'G', 3:'U'}
-        self.reverse_mapping = {'A':0, 'C':1, 'G':2, 'U':3}
-        self.reverse_action = {0:3, 1:2, 2:1, 3:1}
-
         self.meta_learning = self.config['meta_learning']
         self.state = None
-
-        if 'randomize' in self.config.keys():
-            self.randomize = self.config['randomize']
-        else:
-            self.randomize = False
-        self.current_sequence = -1
-
-        self.use_full_state = self.config['full_state']
+        self.validator = None
 
         # Logging 
         if 'path' not in self.config.keys():
             self.config['path'] = settings.RESULTS
-        
-        self.dataset = Dataset(length=self.config['seq_len'], n_seqs=self.config['seq_count'])
+ 
+        self.randomize = self.config['randomize']
+        encoding_type = self.config.get('encoding_type')
+        if encoding_type is None: encoding_type = 0
+
+        self.dataset = Dataset(
+            length=self.config['seq_len'],
+            n_seqs=self.config['seq_count'],
+            encoding_type=encoding_type
+        )
+
+        self.current_sequence = 0
         self.next_target()
-        self.folded_design = ''
-        self.good_solutions = []
         self.prev_solution = None
+        self.permute = self.config['permute']
 
         # Parameters
+        self.use_full_state = self.config['full_state']
         self.kernel_size = self.config['kernel_size']
         self.reward_exp = self.config['reward_exp']
 
@@ -58,15 +54,27 @@ class RnaDesign(gym.Env):
         self.lhd = 500
         self.current_nucleotide = 0
         self.done = False
-        self.action_space = gym.spaces.Discrete(4)
+        size = np.shape(self.solution.get_state())
+
 
         if self.use_full_state:
-            self.observation_space = gym.spaces.Box(shape=(6, self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
+            self.observation_space = gym.spaces.Box(shape=(size[0], self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
         else:
             self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1, dtype=np.uint8)
+        self.action_space = gym.spaces.Discrete(4)
 
-    def next_target(self, r=True):
+    def add_validator(self, model):
+        """
+        Add the validator object as an attribute
 
+        This is mainly a workaround to run evaluation on the validation sets while training
+        """
+        self.tester = Tester(self, model)
+        
+    def next_target(self):
+        """
+        Get the next sequence in the dataset
+        """
         if self.randomize:
             self.target = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
         else:
@@ -83,8 +91,8 @@ class RnaDesign(gym.Env):
         self.solution.str_action(action)
         self.solution.matrix_action(action)
 
-        if self.solution.current_nucleotide == self.target.len - 1:
-            self.solution.r = self.r = self.solution.evaluate(self.env_id)
+        if self.solution.index == self.target.len - 1:
+            self.solution.r = self.r = self.solution.evaluate(self.solution.string, permute=self.permute)
             self.done = True
         else:
             self.solution.find_next_unfilled()
@@ -102,7 +110,6 @@ class RnaDesign(gym.Env):
         if self.solution.hd < self.lhd: self.lhd = self.solution.hd
         if self.solution.hd <= self.config['write_threshold']:
             self.solution.write_solution()
-            self.good_solutions.append(self.solution)
         print('                                    Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'
             .format(self.ep, self.target.file_nr, self.target.len, self.r, self.solution.hd, self.lhd), end='\r')
         
@@ -150,8 +157,8 @@ class RnaDesign(gym.Env):
                 self.test()
             except KeyError:
                 print(self.target.seq)
-                print('Bad: {}'.format(self.current_index))
-                # del self.dataset.sequences[self.current_index - 1]
+                print('Bad: {}'.format(self.solution.index))
+                # del self.dataset.sequences[self.solution.index - 1]
             self.next_target()
 
     def random_sampling_test(self,runs=1000):
@@ -161,13 +168,18 @@ class RnaDesign(gym.Env):
                 action = self.action_space.sample()
                 _, _, self.done, _ = self.step(action)
 
-    def visual_test(self):
+    def visual_test(self, pause=False):
         name = 'Visual Test'
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(name, 1000, 200)
-        
+
+        driver = create_browser('dataset')
+
         for _ in range(20):
             self.reset()
+            show_rna(self.target.seq, None, driver, 0, 'dataset')
+            print(self.target.markers)
+            print(self.target.seq)
             while not self.done:
                 action = self.action_space.sample()
                 image, _, self.done, _ = self.step(action)
@@ -176,10 +188,11 @@ class RnaDesign(gym.Env):
                     # image[:, self.solution.current_nucleotide] = 100
                     # image[:,start] = 255
                     # image[:,start+self.solution.kernel_size*2] = 255
-                    print(self.solution.string, end='\r')
+                    print(colorize_nucleotides(self.solution.string), end='\r')
                 im = np.asarray(image, dtype=np.uint8)
                 cv2.imshow(name, im)
                 cv2.waitKey(1)
+                if pause: input()
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')

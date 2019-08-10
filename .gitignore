@@ -2,8 +2,8 @@ rlfold/trained_models
 rlfold/data/rfam_learn_train
 rlfold/analysis
 rlfold/notes.md
-rlfold/algorithms
-rlfold/results/*.rna
+rlfold/results/
+# rlfold/interface
 
 rlfold.egg-info
 .vscode
@@ -35,28 +35,3 @@ var/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
-
-# Sphinx documentation
-docs/_build/
