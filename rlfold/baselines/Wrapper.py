@@ -5,13 +5,11 @@ from collections import deque
 import numpy as np
 import os, yaml, sys, subprocess, webbrowser, time, datetime, random, copy
 import matplotlib.pyplot as plt
-# import stable_baselines, gym, rusher
 import stable_baselines, gym, rlfold #,# pybullet_envs, rusher, nao_rl
 from stable_baselines import PPO2, GAIL
 from matplotlib.animation import FuncAnimation
 import cv2
 from rlfold.interface import show_rna, create_browser
-# from selenium import webdriver
 
 # Local
 from rlfold.utils import Sequence, Dataset

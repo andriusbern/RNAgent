@@ -154,9 +154,7 @@ class Solution(object):
         """
         Evaluate the current solution, measure the hamming distance between the folded structure and the target
         """
-        # if 'permute' in self.config['testing'].keys():
-        #     local_search = 
-        # else:
+
         if string is None: string = self.string
         self.folded_design, self.fe = fold_fn(string)
         self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
@@ -166,21 +164,21 @@ class Solution(object):
             self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
 
         if permute and self.hd <= 5 and self.hd > 0:
-            self.str = self.local_improvement(mismatch_indices)
+            self.str, self.hd = self.local_improvement(mismatch_indices)
             self.folded_design, self.fe = fold_fn(self.string)
             self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
-            if self.config['detailed_comparison']:
-                self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
-            else:
-                self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
+        # if self.config['detailed_comparison']:
+        #     self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
+        # else:
+        #     self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
 
         self.reward = reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
         if verbose:
             print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))
 
-        return reward
+        return reward, self.hd
     
     def local_improvement(self, mismatch_indices, budget=20, surroundings=True):
         """
@@ -202,7 +200,7 @@ class Solution(object):
             mismatch_indices += all_indices
         else:
             all_indices = mismatch_indices
-
+        min_hd = 100
         while self.hd != 0 and step < budget:
             print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
             permutation = copy.deepcopy(self.str)
@@ -219,7 +217,9 @@ class Solution(object):
                     permutation[pair] = self.mapping[self.reverse_action[action]]
 
             string = ''.join(permutation)
-            reward = self.evaluate(string, permute=False)
+            reward, hd = self.evaluate(string, permute=False)
+            if hd < min_hd: min_hd = hd
+
             step += 1
             # mm1, mm2 = highlight_mismatches(string, self.string)
             # print(mm1)
@@ -227,7 +227,7 @@ class Solution(object):
             # input()
         if reward == 1:
             print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
-        return permutation
+        return permutation, min_hd
 
     def variance_reward(self):
         """

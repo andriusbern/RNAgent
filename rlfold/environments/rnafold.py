@@ -39,12 +39,12 @@ class RnaDesign(gym.Env):
                     data = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=encoding_type)
                     sequences += data.sequences
                 self.dataset = Dataset(sequences=sequences)
-        else:
-            self.dataset = Dataset(
-                length=self.config['seq_len'],
-                n_seqs=self.config['seq_count'],
-                encoding_type=encoding_type
-            )
+            else:
+                self.dataset = Dataset(
+                    length=self.config['seq_len'],
+                    n_seqs=self.config['seq_count'],
+                    encoding_type=encoding_type
+                )
 
         self.current_sequence = 0
         self.next_target()
@@ -100,7 +100,8 @@ class RnaDesign(gym.Env):
         self.solution.matrix_action(action)
 
         if self.solution.index == self.target.len - 1:
-            self.solution.r = self.r = self.solution.evaluate(self.solution.string, permute=self.permute)
+            self.solution.r, _ = self.solution.evaluate(self.solution.string, permute=self.permute)
+            self.r = self.solution.r
             self.done = True
         else:
             self.solution.find_next_unfilled()
