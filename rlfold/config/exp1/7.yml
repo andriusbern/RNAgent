@@ -1,8 +1,8 @@
 main:
     model: PPO2
     policy: CustomCnnPolicy
-    n_workers: 2
-    n_steps: 30
+    n_workers: 30
+    n_steps: 5000000
     multi_discrete: false
     frame_stack: 0
     seed: 1
@@ -30,7 +30,7 @@ policies:
         - 16
         kernel_size:
         # - - 6
-        - - 2
+        - - 7
           - 1
         - - 1
           - 25
@@ -63,8 +63,8 @@ policies:
 
 environment:
     # Encoding
-    encoding_type: 0
-    use_nucleotides: false
+    encoding_type: 1
+    use_nucleotides: true
     use_padding: true
     full_state: true
     kernel_size: 35

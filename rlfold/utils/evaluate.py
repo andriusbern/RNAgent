@@ -12,64 +12,63 @@ class Tester(object):
         1. Detailed summary of the results on test sets
         2. Hyperparameter adjustment during training
     """
-    def __init__(self, model, budget=10):
+    def __init__(self, model, budget=20):
         self.model = model
         self.env = RnaDesign(get_parameters) # self.model.env
         self.budget = budget
         self.dir = self.model._model_dir
 
-    def run_test(self, dataset, budget=100, show=False):
-        """
-        Runs a test on a selected dataset
-        """
-        training_set = self.model.get_attr('dataset')[0]
-        n_seqs = 29 if dataset == 'rfam_taneda' else 100
-        test_set = Dataset(dataset=dataset, n_seqs=n_seqs)
+    # def run_test(self, dataset, budget=100, show=False):
+    #     """
+    #     Runs a test on a selected dataset
+    #     """
+    #     training_set = self.model.get_attr('dataset')[0]
+    #     n_seqs = 29 if dataset == 'rfam_taneda' else 100
+    #     test_set = Dataset(dataset=dataset, n_seqs=n_seqs)
 
-        if show:
-            driver = create_browser('display')
-        self.model.env.set_attr('dataset', test_set)
-        self.model.env.set_attr('randomize', False)
-        self.model.env.set_attr('meta_learning', False)
-        get_sequence = self.model.env.get_attr('next_target')[0]
-        self.model.env.set_attr('current_sequence', 0)
+    #     if show:
+    #         driver = create_browser('display')
+    #     self.model.env.set_attr('dataset', test_set)
+    #     self.model.env.set_attr('randomize', False)
+    #     self.model.env.set_attr('meta_learning', False)
+    #     get_sequence = self.model.env.get_attr('next_target')[0]
+    #     self.model.env.set_attr('current_sequence', 0)
 
-        self.test_state = self.model.env.reset()
-        solved = []
+    #     self.test_state = self.model.env.reset()
+    #     solved = []
         
-        for n, _ in enumerate(test_set.sequences):
-            print('\n', n)
-            get_sequence()
-            end = False
-            episode = 0
-            for iteration in range(budget):
-                self.done = [False]
-                while True:
-                    action, _ = self.model.predict(self.test_state)
-                    self.test_state, _, self.done, _ = self.model.env.step(action)
-                    solutions = self.model.env.get_attr('prev_solution')
+    #     for n, _ in enumerate(test_set.sequences):
+    #         print('\n', n)
+    #         get_sequence()
+    #         end = False
+    #         episode = 0
+    #             self.done = [False]
+    #             while True:
+    #                 action, _ = self.model.predict(self.test_state)
+    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
+    #                 solutions = self.model.env.get_attr('prev_solution')
                     
-                    for solution in solutions:
-                        if solution.hd <= 0:
-                            solution.summary(True)
-                            solved.append([n, solution, iteration+1, budget])
-                            print('Solved sequence: {} in {}/{} iterations...'.format(n, iteration+1, budget))
-                            end = True
-                            if show:
-                                show_rna(solution.target.sequence, solution.string, driver, 0, 'display')
-                            break
-                        if end:
-                            break
-                if end: 
-                    break
-        print('Solved ', len(solved), '/', len(test_set.sequences))
+    #                 for solution in solutions:
+    #                     if solution.hd <= 0:
+    #                         solution.summary(True)
+    #                         solved.append([n, solution, iteration+1, budget])
+    #                         print('Solved sequence: {} in {}/{} iterations...'.format(n, iteration+1, budget))
+    #                         end = True
+    #                         if show:
+    #                             show_rna(solution.target.sequence, solution.string, driver, 0, 'display')
+    #                         break
+    #                     if end:
+    #                         break
+    #             if end: 
+    #                 break
+    #     print('Solved ', len(solved), '/', len(test_set.sequences))
 
-        self.write_test_results(solved, test_set)
+    #     self.write_test_results(solved, test_set)
         
-        self.model.env.set_attr('dataset', training_set)
-        self.env.reset()
+    #     self.model.env.set_attr('dataset', training_set)
+    #     self.env.reset()
 
-        return solved
+    #     return solved
         
     def evaluate(self, budget):
         """
