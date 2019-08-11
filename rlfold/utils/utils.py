@@ -27,7 +27,7 @@ def load_length_metadata(dataset, length):
     Loads length metadata
     """
     filename = os.path.join(settings.DATA, 'metadata', dataset, 'len', '{}.yml'.format(length))
-    print('Loaded metadata from {}'.format(filename))
+    # print('Loaded metadata from {}'.format(filename))
     try:
         with open(filename, 'r') as f:
             data = yaml.load(f)

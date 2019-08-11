@@ -182,7 +182,7 @@ class Solution(object):
 
         return reward
     
-    def local_improvement(self, mismatch_indices, budget=50, surroundings=True):
+    def local_improvement(self, mismatch_indices, budget=20, surroundings=True):
         """
         Performs a local improvement on the mismatch sites 
         """
@@ -191,7 +191,7 @@ class Solution(object):
 
         if surroundings:
             all_indices = []
-            window = [1, 2]
+            window = [1]
             for index in mismatch_indices:
                 for i in window:
                     if index - i >= 0:
@@ -203,7 +203,7 @@ class Solution(object):
         else:
             all_indices = mismatch_indices
 
-        while reward != 1 and step < budget:
+        while self.hd != 0 and step < budget:
             print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
             permutation = copy.deepcopy(self.str)
             
@@ -221,11 +221,10 @@ class Solution(object):
             string = ''.join(permutation)
             reward = self.evaluate(string, permute=False)
             step += 1
-
-
             # mm1, mm2 = highlight_mismatches(string, self.string)
             # print(mm1)
             # print(mm2)
+            # input()
         if reward == 1:
             print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
         return permutation

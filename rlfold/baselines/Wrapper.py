@@ -11,6 +11,7 @@ from stable_baselines import PPO2, GAIL
 from matplotlib.animation import FuncAnimation
 import cv2
 from rlfold.interface import show_rna, create_browser
+# from selenium import webdriver
 
 # Local
 from rlfold.utils import Sequence, Dataset
@@ -21,6 +22,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.info('TensorFlow')
 tf.logging.set_verbosity(tf.logging.ERROR)
 tf.logging.info('TensorFlow')
+import multiprocessing as mp
+# mp.set_start_method('spawn')
 
 def get_env_type(env_name):
     """
@@ -275,6 +278,9 @@ class SBWrapper(object):
         Creates a corresponding vectorized environment
         """
         print('Creating {} Environment...\n'.format(self.env_name))
+
+        if self.config['main']['model'] == 'PPO1': self.config['main']['n_workers'] = 1
+        # else: n_workers = self.config['main']['n_workers']
         self.env = create_env(self.env_name, self.config)
         testconf = copy.deepcopy(self.config)
         testconf['environment']['meta_learning'] = False
@@ -480,7 +486,7 @@ class SBWrapper(object):
                 if self.done[0]:
                     s.summary(True)
 
-    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=True, show=False, pause=0):
+    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
         """
         Run
         """
@@ -489,6 +495,8 @@ class SBWrapper(object):
             driver = create_browser('double')
         self.model.set_env(self.test_env)
         n_seqs=29 if dataset=='rfam_taneda' else 100
+        if dataset=='rfam_learn_train':
+            n_seqs=5000
         
         d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
         self.model.env.set_attr('dataset', d)
@@ -496,9 +504,7 @@ class SBWrapper(object):
         self.model.env.set_attr('meta_learning', False)
         get_seq = self.model.env.get_attr('next_target')[0]
         self.model.env.set_attr('current_sequence', 0)
-        # self.config['testing']['permute'] = True
-        if permute:
-            self.model.env.set_attr('permute', True)
+        self.model.env.set_attr('permute', permute)
 
         self.test_state = self.model.env.reset()
         solved = []
@@ -521,7 +527,7 @@ class SBWrapper(object):
                     
                     if self.done[0]:
                         if show and ep%1==0:
-                            show_rna(s.folded_design, s.string, driver, 1)
+                            show_rna(s.folded_design.seq, s.string, driver, 1)
                             
                             time.sleep(pause)
                         if s.hd <= 0:
@@ -534,6 +540,75 @@ class SBWrapper(object):
                             #     show_rna(s.target.seq, s.string, driver, 0, 'display')
                 if end: break
         print('Solved ', len(solved), '/', len(d.sequences))
+
+        self.write_test_results(solved, d)
+        
+        return solved
+
+    def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0):
+        """
+        Run
+        """
+        # driver = webdriver.Chrome('/home/andrius/chromedriver')
+        if show:
+            driver = create_browser('double')
+        self.model.set_env(self.test_env)
+        n_seqs=29 if dataset=='rfam_taneda' else 100
+        if dataset=='rfam_learn_train':
+            n_seqs=5000
+        
+        d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
+        self.model.env.set_attr('dataset', d)
+        self.model.env.set_attr('randomize', False)
+        self.model.env.set_attr('meta_learning', False)
+        get_seq = self.model.env.get_attr('next_target')[0]
+        self.model.env.set_attr('current_sequence', 0)
+        self.model.env.set_attr('permute', permute)
+
+        self.test_state = self.model.env.reset()
+        solved = []
+        t_total = 0
+        
+        attempts = np.zeros([n_seqs], dtype=np.uint8)
+        min_hd = np.ones([n_seqs], dtype=np.uint8) * 500
+        time_taken = np.zeros([n_seqs])
+        try:
+            while t_total <= limit:
+                ep_start = time.time()
+                get_seq()
+                target = self.model.env.get_attr('target')[0]
+                if show:
+                    show_rna(target.seq, 'AUAUAU', driver, 0)
+                    time.sleep(pause)
+                ep = 0
+                
+                self.done = [False]
+                while not self.done[0]:
+                    action, _ = self.model.predict(self.test_state)
+                    self.test_state, _, self.done, _ = self.model.env.step(action)
+                    s = self.model.env.get_attr('prev_solution')[0]
+                    num = s.target.file_nr - 1
+                    if self.done[0]:
+                        if s.hd < min_hd[num]: min_hd[num] = s.hd
+                        attempts[num] += 1
+                        if show and ep%1==0:
+                            show_rna(s.folded_design.seq, s.string, driver, 1)
+                            time.sleep(pause)
+                        t_episode = time.time() - ep_start
+                        if s.hd <= 0:
+                            dataset = self.model.env.get_attr('dataset')[0]
+                            dataset.sequences.remove(s.target)
+                            s.summary(True)
+                            ep += 1
+                        t_total += t_episode
+                        time_taken[num] += t_episode
+                        if s.hd <= 0:
+                            solved.append([num, s, attempts[num], min_hd[num], round(time_taken[num],2)])
+                            print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
+        except KeyboardInterrupt:
+            pass
+        print('Solved {}/{}'.format(len(solved), n_seqs))
+        print(min_hd)
 
         self.write_test_results(solved, d)
         
@@ -561,6 +636,31 @@ class SBWrapper(object):
                 for line in lines:
                     f.write(line + '\n')
                 f.write('Solved in: {}/{}\n'.format(result[2], budget))
+
+    def write_timed_results(self, solved, unsolved, dataset):
+        """
+        Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
+        """
+        date = datetime.datetime.now().strftime("%m-%d_%H-%M")
+        directory = os.path.join(settings.RESULTS, dataset.dataset)
+        if not os.path.isdir(directory): os.makedirs(directory)
+        filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
+        budget = results[0][3]
+        with open(filename, 'w') as f:
+
+            msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} time budget.\n'.format(
+                    dataset.dataset, date, len(results), dataset.n_seqs, budget)
+            # msg += 100 * 
+            msg += ''.join(['=']*100) + '\n'
+            f.write(msg)    
+        
+            for result in solved:
+                lines = result[1].summary()
+                for line in lines:
+                    f.write(line + '\n')
+                f.write('Solved in: {}/{}\n'.format(result[2], budget))
+
+            # for result in unsolved
 
         
 if __name__ == "__main__":

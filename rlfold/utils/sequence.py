@@ -94,7 +94,8 @@ class Sequence(object):
                 seq[i1], seq[i2] = '-', '-'
                 i1 -= 1
                 i2 += 1
-            while True:
+            max_count = 0
+            while max_count < 1000:
                 # Expansion
                 if seq[i1] != '(':
                     i1 -= 1
@@ -113,6 +114,7 @@ class Sequence(object):
                     seq[i1], seq[i2] = '-', '-'
                     i1 -= 1
                     i2 += 1
+                max_count += 1
                 if stop:
                     break
         return pairs

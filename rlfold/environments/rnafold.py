@@ -30,13 +30,21 @@ class RnaDesign(gym.Env):
  
         self.randomize = self.config['randomize']
         encoding_type = self.config.get('encoding_type')
-        if encoding_type is None: encoding_type = 0
 
-        self.dataset = Dataset(
-            length=self.config['seq_len'],
-            n_seqs=self.config['seq_count'],
-            encoding_type=encoding_type
-        )
+        if self.config.get('test_set') is not None:
+            sequences = []
+            if self.config['test_set']:
+                for dataset in ['rfam_learn_test', 'rfam_learn_validation', 'rfam_taneda', 'eterna']:
+                    n_seqs = 29 if dataset=='rfam_taneda' else 100
+                    data = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=encoding_type)
+                    sequences += data.sequences
+                self.dataset = Dataset(sequences=sequences)
+        else:
+            self.dataset = Dataset(
+                length=self.config['seq_len'],
+                n_seqs=self.config['seq_count'],
+                encoding_type=encoding_type
+            )
 
         self.current_sequence = 0
         self.next_target()
@@ -80,7 +88,7 @@ class RnaDesign(gym.Env):
         else:
             self.target = self.dataset.sequences[self.current_sequence]
             self.current_sequence += 1
-            if self.current_sequence >= self.dataset.n_seqs - 1:
+            if self.current_sequence >= len(self.dataset.sequences) - 1:
                 self.current_sequence = 0
         self.solution = Solution(self.target, self.config)
 

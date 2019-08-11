@@ -1,3 +1,4 @@
+from rlfold.utils import Dataset
 from rlfold.baselines import SBWrapper, get_parameters
 import rlfold.environments
 import os, sys, argparse, time
@@ -31,12 +32,10 @@ def run_experiment(env_name, parameter_folder , result_folder, verbose=False):
         model.train()
         t = time.time() - t0
         print('\n\nTraining time: {:2f} min, steps/s: {}'.format(t/60, float(steps)/t), sep)
+        model.model.env.close()
 
     # models[0]._tensorboard()
         
-        
-        
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--env_name', type=str)
