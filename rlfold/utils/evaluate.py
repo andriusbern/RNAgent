@@ -19,11 +19,10 @@ class Tester(object):
         self.test_state = None
         self.done = None
 
-    def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0, verbose=True):
+    def timed_evaluation(self, dataset='rfam_learn_test', time_limit=60, permute=False, show=False, pause=0, verbose=True):
         """
         Run timed test on a dataset
         """
-        print('EVALUATING', dataset)
         model = self.wrapper.model
         model.set_env(self.wrapper.test_env)
 
@@ -54,7 +53,7 @@ class Tester(object):
         time_taken = np.zeros([n_seqs])
 
         try:
-            while t_total <= limit:
+            while t_total <= time_limit:
                 ep_start = time.time()
                 get_seq()
                 target = model.env.get_attr('target')[0]
@@ -91,7 +90,7 @@ class Tester(object):
                         if solution.hd <= 0:
                             if verbose:
                                 solution.summary(True)
-                                solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2)], limit)
+                                solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2), time_limit])
                                 print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
         except KeyboardInterrupt:
             pass
@@ -99,8 +98,8 @@ class Tester(object):
 
         date = self.date = str(datetime.datetime.now().strftime("%m-%d %H:%M"))
         model.set_env(self.wrapper.env) # Restore env
-        description = [date, len(solved), limit, self.wrapper._model_path, self.wrapper.current_checkpoint, dataset]
-        self.write_test_results(solved, test_set)
+        description = [date, len(solved), time_limit, self.wrapper._model_path, self.wrapper.current_checkpoint, dataset]
+        self.write_test_results(solved, test_set, time_limit)
         self.write_detailed_csv(description, min_hd, time_taken)
 
         return solved, description
@@ -109,15 +108,15 @@ class Tester(object):
         """
         Run evaluation on test sets and save the model'solution checkpoint
         """
-        r1, desc = self.timed_evaluation('rfam_learn_test', time_limit)
-        r2, _ = self.timed_evaluation('rfam_taneda', time_limit)
-        r3, _ = self.timed_evaluation('rfam_learn_validation', time_limit)
-        r4, _ = self.timed_evaluation('eterna', time_limit)
+        r1, desc = self.timed_evaluation('rfam_learn_test', time_limit, verbose=False)
+        r2, _ = self.timed_evaluation('rfam_taneda', time_limit, verbose=False)
+        r3, _ = self.timed_evaluation('rfam_learn_validation', time_limit, verbose=False)
+        r4, _ = self.timed_evaluation('eterna', time_limit, verbose=False)
 
         path = os.path.join(settings.RESULTS, 'training_tests.csv')
-        self.write_csv([r1, r2, r3, r4], path, description)
+        self.write_csv([r1, r2, r3, r4], path, desc, time_limit)
 
-    def write_test_results(self, results, dataset):
+    def write_test_results(self, results, dataset, time_limit):
         """
         Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
         """
@@ -125,34 +124,36 @@ class Tester(object):
         directory = os.path.join(settings.RESULTS, dataset.dataset)
         if not os.path.isdir(directory): os.makedirs(directory)
         filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-        time_limit = results[0][5]
         with open(filename, 'w') as f:
 
-            msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
+            msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {}s eval budget.\n'.format(
                     dataset.dataset, date, len(results), dataset.n_seqs, time_limit)
             # msg += 100 * 
             msg += ''.join(['=']*100) + '\n'
             f.write(msg)    
-        
+
             for result in results:
                 lines = result[1].summary()
                 for line in lines:
                     f.write(line + '\n')
-                f.write('Solved in: {} attempts, {}s\n'.format(result[2], results[4]))
+                try:
+                    f.write('Solved in: {} attempts, {}s\n'.format(result[2], result[4]))
+                except:
+                    pass
     
 
-    def write_csv(self, results, path):
+    def write_csv(self, results, path, description, time_limit):
         """
         """
         header = 'Date, Solved, Time(s), Model, Checkpoint, learn_test, taneda, learn_validation, eterna\n'
-        data   = 
+        data   = ', '.join([str(x) for x in description[:-1]])
+        data += ', ' + ', '.join([str(len(x)) for x in results]) + '\n'
         if not os.path.isfile(path):
             with open(path, 'w') as f:
                 f.write(header)
         else:
             with open(path, 'a') as f:
-                for result in results:
-                    
+                f.write(data)
     
     def write_detailed_csv(self, description, hd, time_taken):
         """

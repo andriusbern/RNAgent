@@ -7,10 +7,9 @@ import os, yaml, sys, subprocess, webbrowser, time, datetime, random, copy
 import matplotlib.pyplot as plt
 import stable_baselines, gym, rlfold #,# pybullet_envs, rusher, nao_rl
 from stable_baselines import PPO2, GAIL
-from matplotlib.animation import FuncAnimation
 import cv2
 from rlfold.interface import show_rna, create_browser
-
+import rlfold.environments
 # Local
 from rlfold.utils import Sequence, Dataset, Tester
 import rlfold.settings as settings
@@ -86,7 +85,7 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
     # Parallelize
     if n_workers > 1:
         if settings.os == 'linux':
-            vectorized = SubprocVecEnv(envs, start_method='fork')
+            vectorized = SubprocVecEnv(envs, start_method='forkserver')
         elif settings.os == 'win32':
             vectorized = SubprocVecEnv(envs, start_method='spawn')
     else:

@@ -1,7 +1,7 @@
 main:
     model: PPO2
     policy: CustomCnnPolicy
-    n_workers: 2
+    n_workers: 20
     n_steps: 15000000
     multi_discrete: false
     frame_stack: 0
@@ -9,7 +9,7 @@ main:
 models:
     PPO2:
         gamma: 1
-        n_steps: 256
+        n_steps: 512
         ent_coef: 0.002
         learning_rate: 0.9e-04
         vf_coef: 0.5
@@ -20,7 +20,6 @@ models:
         cliprange: 0.1
         full_tensorboard_log: false
         verbose: 0
-    
 policies:
     CnnPolicy: {}
     CustomCnnPolicy: 
@@ -32,15 +31,13 @@ policies:
         kernel_size:
         # - - 6
         - - 4
-          - 15
+          - 10
         - - 1
           - 10
         - - 1
           - 10
         - - 1
           - 5
-        # - - 1
-        #   - 5
         stride:
         - 1
         - 1
@@ -78,14 +75,13 @@ environment:
 
     # Data
     meta_learning: true
-    seq_count: 200
+    seq_count: 10000
     randomize: true
     exact_seq_length: false
     test_set: false
     seq_len:
-        - 71
-        - 400
 
 testing:
-
+    evaluate_every: 1000000
+    test_timeout: 90
 

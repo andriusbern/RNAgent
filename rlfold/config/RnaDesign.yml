@@ -71,15 +71,13 @@ environment:
 
     # Data
     meta_learning: true
-    seq_count: 200
+    seq_count: 250
     randomize: true
     exact_seq_length: false
     test_set: false
     seq_len:
-        - 71
-        - 80
 
 testing:
-    evaluate_every: 15000
-    test_timeout: 15
+    evaluate_every: 1000
+    test_timeout: 5
 
