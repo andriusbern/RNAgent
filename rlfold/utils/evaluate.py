@@ -1,9 +1,9 @@
 from rlfold.utils import Dataset
-from rlfold.environments import RnaDesign
-from rlfold.baselines import SBWrapper, get_parameters
 from rlfold.interface import show_rna, create_browser
-import os, datetime, sys
+import os, datetime, sys, time
 import rlfold.settings as settings
+import numpy as np
+import pandas as pd
 
 class Tester(object):
     """
@@ -12,72 +12,110 @@ class Tester(object):
         1. Detailed summary of the results on test sets
         2. Hyperparameter adjustment during training
     """
-    def __init__(self, model, budget=20):
-        self.model = model
-        self.env = RnaDesign(get_parameters) # self.model.env
+    def __init__(self, wrapper, budget=20):
+        self.wrapper = wrapper
         self.budget = budget
-        self.dir = self.model._model_dir
+        # self.dir = self.wrapper._model_path
+        self.test_state = None
+        self.done = None
 
-    # def run_test(self, dataset, budget=100, show=False):
-    #     """
-    #     Runs a test on a selected dataset
-    #     """
-    #     training_set = self.model.get_attr('dataset')[0]
-    #     n_seqs = 29 if dataset == 'rfam_taneda' else 100
-    #     test_set = Dataset(dataset=dataset, n_seqs=n_seqs)
+    def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0, verbose=True):
+        """
+        Run timed test on a dataset
+        """
+        print('EVALUATING', dataset)
+        model = self.wrapper.model
+        model.set_env(self.wrapper.test_env)
 
-    #     if show:
-    #         driver = create_browser('display')
-    #     self.model.env.set_attr('dataset', test_set)
-    #     self.model.env.set_attr('randomize', False)
-    #     self.model.env.set_attr('meta_learning', False)
-    #     get_sequence = self.model.env.get_attr('next_target')[0]
-    #     self.model.env.set_attr('current_sequence', 0)
+        if show:
+            driver = create_browser('double')
 
-    #     self.test_state = self.model.env.reset()
-    #     solved = []
+        n_seqs=29 if dataset=='rfam_taneda' else 100
         
-    #     for n, _ in enumerate(test_set.sequences):
-    #         print('\n', n)
-    #         get_sequence()
-    #         end = False
-    #         episode = 0
-    #             self.done = [False]
-    #             while True:
-    #                 action, _ = self.model.predict(self.test_state)
-    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
-    #                 solutions = self.model.env.get_attr('prev_solution')
-                    
-    #                 for solution in solutions:
-    #                     if solution.hd <= 0:
-    #                         solution.summary(True)
-    #                         solved.append([n, solution, iteration+1, budget])
-    #                         print('Solved sequence: {} in {}/{} iterations...'.format(n, iteration+1, budget))
-    #                         end = True
-    #                         if show:
-    #                             show_rna(solution.target.sequence, solution.string, driver, 0, 'display')
-    #                         break
-    #                     if end:
-    #                         break
-    #             if end: 
-    #                 break
-    #     print('Solved ', len(solved), '/', len(test_set.sequences))
-
-    #     self.write_test_results(solved, test_set)
+        test_set = Dataset(
+            dataset=dataset, 
+            start=1, 
+            n_seqs=n_seqs, 
+            encoding_type=self.wrapper.config['environment']['encoding_type'])
         
-    #     self.model.env.set_attr('dataset', training_set)
-    #     self.env.reset()
+        # Get and set attributes
+        model.env.set_attr('dataset', test_set)
+        model.env.set_attr('randomize', False)
+        model.env.set_attr('meta_learning', False)
+        model.env.set_attr('current_sequence', 0)
+        model.env.set_attr('permute', permute)
+        get_seq = model.env.get_attr('next_target')[0]
 
-    #     return solved
+        self.test_state = model.env.reset()
+        solved  = []
+        t_total = 0
+        attempts = np.zeros([n_seqs], dtype=np.uint8)
+        min_hd   = np.ones([n_seqs], dtype=np.uint8) * 500
+        time_taken = np.zeros([n_seqs])
+
+        try:
+            while t_total <= limit:
+                ep_start = time.time()
+                get_seq()
+                target = model.env.get_attr('target')[0]
+                if show:
+                    show_rna(target.seq, 'AUAUAU', driver, 0)
+                    time.sleep(pause)
+                episode = 0
+                
+                self.done = [False]
+                while not self.done[0]:
+
+                    action, _ = model.predict(self.test_state)
+                    self.test_state, _, self.done, _ = model.env.step(action)
+                    solution = model.env.get_attr('prev_solution')[0]
+                    num = solution.target.file_nr - 1
+
+                    if self.done[0]:
+
+                        if show and episode%1==0:
+                            show_rna(solution.folded_design.seq, solution.string, driver, 1)
+                            time.sleep(pause)
+
+                        if solution.hd < min_hd[num]: min_hd[num] = solution.hd
+                        if solution.hd <= 0:
+                            data = model.env.get_attr('dataset')[0]
+                            data.sequences.remove(solution.target)
+                            episode += 1
+
+                        attempts[num] += 1
+                        t_episode = time.time() - ep_start
+                        t_total += t_episode
+                        time_taken[num] += t_episode
+
+                        if solution.hd <= 0:
+                            if verbose:
+                                solution.summary(True)
+                                solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2)], limit)
+                                print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
+        except KeyboardInterrupt:
+            pass
+        print('Solved {}/{}'.format(len(solved), n_seqs))
+
+        date = self.date = str(datetime.datetime.now().strftime("%m-%d %H:%M"))
+        model.set_env(self.wrapper.env) # Restore env
+        description = [date, len(solved), limit, self.wrapper._model_path, self.wrapper.current_checkpoint, dataset]
+        self.write_test_results(solved, test_set)
+        self.write_detailed_csv(description, min_hd, time_taken)
+
+        return solved, description
         
-    def evaluate(self, budget):
+    def evaluate(self, time_limit=60):
         """
         Run evaluation on test sets and save the model'solution checkpoint
         """
-        result1 = self.run_test('rfam_learn_test', self.budget)
-        result2 = self.run_test('rfam_taneda', self.budget)
-        result3 = self.run_test('rfam_learn_validation', self.budget)
-        result4 = self.run_test('eterna', self.budget)
+        r1, desc = self.timed_evaluation('rfam_learn_test', time_limit)
+        r2, _ = self.timed_evaluation('rfam_taneda', time_limit)
+        r3, _ = self.timed_evaluation('rfam_learn_validation', time_limit)
+        r4, _ = self.timed_evaluation('eterna', time_limit)
+
+        path = os.path.join(settings.RESULTS, 'training_tests.csv')
+        self.write_csv([r1, r2, r3, r4], path, description)
 
     def write_test_results(self, results, dataset):
         """
@@ -87,11 +125,11 @@ class Tester(object):
         directory = os.path.join(settings.RESULTS, dataset.dataset)
         if not os.path.isdir(directory): os.makedirs(directory)
         filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-        budget = results[0][3]
+        time_limit = results[0][5]
         with open(filename, 'w') as f:
 
             msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
-                    dataset.dataset, date, len(results), dataset.n_seqs, budget)
+                    dataset.dataset, date, len(results), dataset.n_seqs, time_limit)
             # msg += 100 * 
             msg += ''.join(['=']*100) + '\n'
             f.write(msg)    
@@ -100,7 +138,46 @@ class Tester(object):
                 lines = result[1].summary()
                 for line in lines:
                     f.write(line + '\n')
-                f.write('Solved in: {}/{}\n'.format(result[2], budget))
+                f.write('Solved in: {} attempts, {}s\n'.format(result[2], results[4]))
+    
+
+    def write_csv(self, results, path):
+        """
+        """
+        header = 'Date, Solved, Time(s), Model, Checkpoint, learn_test, taneda, learn_validation, eterna\n'
+        data   = 
+        if not os.path.isfile(path):
+            with open(path, 'w') as f:
+                f.write(header)
+        else:
+            with open(path, 'a') as f:
+                for result in results:
+                    
+    
+    def write_detailed_csv(self, description, hd, time_taken):
+        """
+        Write a csv with individual sequence details 
+        """
+        
+        header = 'Date, Solved, Time(s), Model, Checkpoint, Dataset'
+
+        sequence_data = ''
+        for i in range(len(hd)):
+            sequence_data += ', ' + str(hd[i])
+            header += ', seq{}'.format(i+1)
+        for i in range(len(time_taken)):
+            sequence_data += ', ({})'.format(round(time_taken[i],2))
+            header += ', seq{}(t)'.format(i+1)
+        header += '\n'
+
+        data_entry = ', '.join([str(x) for x in description]) + sequence_data + '\n'
+        dataset = description[-1]
+        path = os.path.join(settings.RESULTS, dataset+'.csv')
+        if not os.path.isfile(path):
+            with open(path, 'w') as f:
+                f.write(header)
+        with open(path, 'a') as f:
+            f.write(data_entry)
 
     def save(self):
         """

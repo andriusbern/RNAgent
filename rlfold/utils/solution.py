@@ -19,9 +19,9 @@ class Solution(object):
 
         self.config = config
         self.target = target
-        self.mapping = {0:'A', 1:'C', 2:'G', 3:'U'}
+        self.mapping         = {0:'A', 1:'C', 2:'G', 3:'U'}
         self.reverse_mapping = {'A':0, 'C':1, 'G':2, 'U':3}
-        self.reverse_action = {0:3, 1:2, 2:1, 3:1}
+        self.reverse_action  = {0:3, 1:2, 2:1, 3:1}
 
         self.str = None
         self.use_full_state = self.config['full_state']
@@ -233,7 +233,6 @@ class Solution(object):
         """
         A reward that penalizes solutions that overuse or underuse nucleotide types.
         """
-
 
 
     def gcau_content(self):

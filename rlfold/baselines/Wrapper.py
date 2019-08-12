@@ -12,7 +12,7 @@ import cv2
 from rlfold.interface import show_rna, create_browser
 
 # Local
-from rlfold.utils import Sequence, Dataset
+from rlfold.utils import Sequence, Dataset, Tester
 import rlfold.settings as settings
 
 import tensorflow as tf
@@ -134,9 +134,6 @@ def get_parameters(env_name, model_path=None, config_name=None, config_location=
     config['policy'] = config['policies'][main['policy']]
     config['model'] = config['models'][main['model']]
 
-    # # Learning rate interpolation 
-    # if not isinstance(config['model']['learning_rate'], list):
-    #     config['model']['learning_rate'] = LinearSchedule(10000, 20, 10).value
     return config
 
 class SBWrapper(object):
@@ -149,6 +146,8 @@ class SBWrapper(object):
         self.config = None
         self.env = None
         self.model = None
+        self.current_checkpoint = 0
+        self.test_runner = Tester(self)
 
         self.env_name = env
         self._env_type = get_env_type(self.env_name)
@@ -330,7 +329,7 @@ class SBWrapper(object):
         print('Cleaned directory {} and removed {} folders.'.format(self._env_path, count))
 
     def _save(self):
-        self.model.save(os.path.join(self._model_path, 'model'))
+        self.model.save(os.path.join(self._model_path, 'model{}'.format(self.current_checkpoint)))
 
         # Save config
         with open(os.path.join(self._model_path, 'config.yml'), 'w') as f:
@@ -390,15 +389,21 @@ class SBWrapper(object):
             self._create_model_dir()
         self._check_env_status()
         try:
+            evaluate_every = self.config['testing'].get('evaluate_every')
+            if evaluate_every is None: evaluate_every = 1000000
             config = dict(
-                total_timesteps=steps if steps is not None else self.n_steps,
+                total_timesteps=steps if steps is not None else evaluate_every,
                 tb_log_name=self._unique[:-2],
                 reset_num_timesteps=False,
                 seed=self.config['main']['seed'])
-
+        
             self.reloaded = True
-            self.model = self.model.learn(**config)
-            self._save()
+
+            for _ in range(self.n_steps//evaluate_every):
+                self.model = self.model.learn(**config)
+                self.test_runner.evaluate(self.config['testing']['test_timeout'])
+                self._save()
+                self.current_checkpoint += 1
         except KeyboardInterrupt:
             print('\n\n\nStopped training...\n')
             self._save()
@@ -484,182 +489,6 @@ class SBWrapper(object):
                 if self.done[0]:
                     s.summary(True)
 
-    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
-        """
-        Run
-        """
-        # driver = webdriver.Chrome('/home/andrius/chromedriver')
-        if show:
-            driver = create_browser('double')
-        self.model.set_env(self.test_env)
-        n_seqs=29 if dataset=='rfam_taneda' else 100
-        if dataset=='rfam_learn_train':
-            n_seqs=5000
-        
-        d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
-        self.model.env.set_attr('dataset', d)
-        self.model.env.set_attr('randomize', False)
-        self.model.env.set_attr('meta_learning', False)
-        get_seq = self.model.env.get_attr('next_target')[0]
-        self.model.env.set_attr('current_sequence', 0)
-        self.model.env.set_attr('permute', permute)
-
-        self.test_state = self.model.env.reset()
-        solved = []
-        
-        for n, seq in enumerate(d.sequences):
-            print(n, '\n')
-            get_seq()
-            target = self.model.env.get_attr('target')[0]
-            if show:
-                show_rna(target.seq, 'AUAUAU', driver, 0)
-                time.sleep(pause)
-            end = False
-            ep = 0
-            for b in range(budget):
-                self.done = [False]
-                while not self.done[0]:
-                    action, _ = self.model.predict(self.test_state)
-                    self.test_state, _, self.done, _ = self.model.env.step(action)
-                    s = self.model.env.get_attr('prev_solution')[0]
-                    
-                    if self.done[0]:
-                        if show and ep%1==0:
-                            show_rna(s.folded_design.seq, s.string, driver, 1)
-                            
-                            time.sleep(pause)
-                        if s.hd <= 0:
-                            s.summary(True)
-                            solved.append([n, s, b+1, budget])
-                            print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
-                            end = True
-                            ep += 1
-                            # if show:
-                            #     show_rna(s.target.seq, s.string, driver, 0, 'display')
-                if end: break
-        print('Solved ', len(solved), '/', len(d.sequences))
-
-        self.write_test_results(solved, d)
-        
-        return solved
-
-    def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0):
-        """
-        Run
-        """
-        # driver = webdriver.Chrome('/home/andrius/chromedriver')
-        if show:
-            driver = create_browser('double')
-        self.model.set_env(self.test_env)
-        n_seqs=29 if dataset=='rfam_taneda' else 100
-        if dataset=='rfam_learn_train':
-            n_seqs=5000
-        
-        d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
-        self.model.env.set_attr('dataset', d)
-        self.model.env.set_attr('randomize', False)
-        self.model.env.set_attr('meta_learning', False)
-        get_seq = self.model.env.get_attr('next_target')[0]
-        self.model.env.set_attr('current_sequence', 0)
-        self.model.env.set_attr('permute', permute)
-
-        self.test_state = self.model.env.reset()
-        solved = []
-        t_total = 0
-        
-        attempts = np.zeros([n_seqs], dtype=np.uint8)
-        min_hd = np.ones([n_seqs], dtype=np.uint8) * 500
-        time_taken = np.zeros([n_seqs])
-        try:
-            while t_total <= limit:
-                ep_start = time.time()
-                get_seq()
-                target = self.model.env.get_attr('target')[0]
-                if show:
-                    show_rna(target.seq, 'AUAUAU', driver, 0)
-                    time.sleep(pause)
-                ep = 0
-                
-                self.done = [False]
-                while not self.done[0]:
-                    action, _ = self.model.predict(self.test_state)
-                    self.test_state, _, self.done, _ = self.model.env.step(action)
-                    s = self.model.env.get_attr('prev_solution')[0]
-                    num = s.target.file_nr - 1
-                    if self.done[0]:
-                        if s.hd < min_hd[num]: min_hd[num] = s.hd
-                        attempts[num] += 1
-                        if show and ep%1==0:
-                            show_rna(s.folded_design.seq, s.string, driver, 1)
-                            time.sleep(pause)
-                        t_episode = time.time() - ep_start
-                        if s.hd <= 0:
-                            dataset = self.model.env.get_attr('dataset')[0]
-                            dataset.sequences.remove(s.target)
-                            s.summary(True)
-                            ep += 1
-                        t_total += t_episode
-                        time_taken[num] += t_episode
-                        if s.hd <= 0:
-                            solved.append([num, s, attempts[num], min_hd[num], round(time_taken[num],2)])
-                            print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
-        except KeyboardInterrupt:
-            pass
-        print('Solved {}/{}'.format(len(solved), n_seqs))
-        print(min_hd)
-
-        self.write_test_results(solved, d)
-        
-        return solved
-
-    def write_test_results(self, results, dataset):
-        """
-        Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
-        """
-        date = datetime.datetime.now().strftime("%m-%d_%H-%M")
-        directory = os.path.join(settings.RESULTS, dataset.dataset)
-        if not os.path.isdir(directory): os.makedirs(directory)
-        filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-        budget = results[0][3]
-        with open(filename, 'w') as f:
-
-            msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
-                    dataset.dataset, date, len(results), dataset.n_seqs, budget)
-            # msg += 100 * 
-            msg += ''.join(['=']*100) + '\n'
-            f.write(msg)    
-        
-            for result in results:
-                lines = result[1].summary()
-                for line in lines:
-                    f.write(line + '\n')
-                f.write('Solved in: {}/{}\n'.format(result[2], budget))
-
-    def write_timed_results(self, solved, unsolved, dataset):
-        """
-        Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
-        """
-        date = datetime.datetime.now().strftime("%m-%d_%H-%M")
-        directory = os.path.join(settings.RESULTS, dataset.dataset)
-        if not os.path.isdir(directory): os.makedirs(directory)
-        filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-        budget = results[0][3]
-        with open(filename, 'w') as f:
-
-            msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} time budget.\n'.format(
-                    dataset.dataset, date, len(results), dataset.n_seqs, budget)
-            # msg += 100 * 
-            msg += ''.join(['=']*100) + '\n'
-            f.write(msg)    
-        
-            for result in solved:
-                lines = result[1].summary()
-                for line in lines:
-                    f.write(line + '\n')
-                f.write('Solved in: {}/{}\n'.format(result[2], budget))
-
-            # for result in unsolved
-
         
 if __name__ == "__main__":
     # import matplotlib.pyplot as plt
@@ -667,3 +496,187 @@ if __name__ == "__main__":
     b = SBWrapper(env)
     b.create_model()
     b.run()
+
+
+
+
+
+
+
+
+
+
+    # def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
+    #     """
+    #     Run
+    #     """
+    #     # driver = webdriver.Chrome('/home/andrius/chromedriver')
+    #     if show:
+    #         driver = create_browser('double')
+    #     self.model.set_env(self.test_env)
+    #     n_seqs=29 if dataset=='rfam_taneda' else 100
+    #     if dataset=='rfam_learn_train':
+    #         n_seqs=5000
+        
+    #     d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
+    #     self.model.env.set_attr('dataset', d)
+    #     self.model.env.set_attr('randomize', False)
+    #     self.model.env.set_attr('meta_learning', False)
+    #     get_seq = self.model.env.get_attr('next_target')[0]
+    #     self.model.env.set_attr('current_sequence', 0)
+    #     self.model.env.set_attr('permute', permute)
+
+    #     self.test_state = self.model.env.reset()
+    #     solved = []
+        
+    #     for n, seq in enumerate(d.sequences):
+    #         print(n, '\n')
+    #         get_seq()
+    #         target = self.model.env.get_attr('target')[0]
+    #         if show:
+    #             show_rna(target.seq, 'AUAUAU', driver, 0)
+    #             time.sleep(pause)
+    #         end = False
+    #         ep = 0
+    #         for b in range(budget):
+    #             self.done = [False]
+    #             while not self.done[0]:
+    #                 action, _ = self.model.predict(self.test_state)
+    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
+    #                 s = self.model.env.get_attr('prev_solution')[0]
+                    
+    #                 if self.done[0]:
+    #                     if show and ep%1==0:
+    #                         show_rna(s.folded_design.seq, s.string, driver, 1)
+                            
+    #                         time.sleep(pause)
+    #                     if s.hd <= 0:
+    #                         s.summary(True)
+    #                         solved.append([n, s, b+1, budget])
+    #                         print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
+    #                         end = True
+    #                         ep += 1
+    #                         # if show:
+    #                         #     show_rna(s.target.seq, s.string, driver, 0, 'display')
+    #             if end: break
+    #     print('Solved ', len(solved), '/', len(d.sequences))
+
+    #     self.write_test_results(solved, d)
+        
+    #     return solved
+
+    # def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0):
+    #     """
+    #     Run
+    #     """
+    #     if show:
+    #         driver = create_browser('double')
+    #     self.model.set_env(self.test_env)
+    #     n_seqs=29 if dataset=='rfam_taneda' else 100
+    #     if dataset=='rfam_learn_train':
+    #         n_seqs=5000
+        
+    #     d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
+    #     self.model.env.set_attr('dataset', d)
+    #     self.model.env.set_attr('randomize', False)
+    #     self.model.env.set_attr('meta_learning', False)
+    #     get_seq = self.model.env.get_attr('next_target')[0]
+    #     self.model.env.set_attr('current_sequence', 0)
+    #     self.model.env.set_attr('permute', permute)
+
+    #     self.test_state = self.model.env.reset()
+    #     solved = []
+    #     t_total = 0
+        
+    #     attempts = np.zeros([n_seqs], dtype=np.uint8)
+    #     min_hd = np.ones([n_seqs], dtype=np.uint8) * 500
+    #     time_taken = np.zeros([n_seqs])
+    #     try:
+    #         while t_total <= limit:
+    #             ep_start = time.time()
+    #             get_seq()
+    #             target = self.model.env.get_attr('target')[0]
+    #             if show:
+    #                 show_rna(target.seq, 'AUAUAU', driver, 0)
+    #                 time.sleep(pause)
+    #             ep = 0
+                
+    #             self.done = [False]
+    #             while not self.done[0]:
+    #                 action, _ = self.model.predict(self.test_state)
+    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
+    #                 s = self.model.env.get_attr('prev_solution')[0]
+    #                 num = s.target.file_nr - 1
+    #                 if self.done[0]:
+    #                     if s.hd < min_hd[num]: min_hd[num] = s.hd
+    #                     attempts[num] += 1
+    #                     if show and ep%1==0:
+    #                         show_rna(s.folded_design.seq, s.string, driver, 1)
+    #                         time.sleep(pause)
+    #                     t_episode = time.time() - ep_start
+    #                     if s.hd <= 0:
+    #                         dataset = self.model.env.get_attr('dataset')[0]
+    #                         dataset.sequences.remove(s.target)
+    #                         s.summary(True)
+    #                         ep += 1
+    #                     t_total += t_episode
+    #                     time_taken[num] += t_episode
+    #                     if s.hd <= 0:
+    #                         solved.append([num, s, attempts[num], min_hd[num], round(time_taken[num],2)])
+    #                         print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
+    #     except KeyboardInterrupt:
+    #         pass
+    #     print('Solved {}/{}'.format(len(solved), n_seqs))
+    #     print(min_hd)
+
+    #     self.write_test_results(solved, d)
+        
+    #     return solved
+
+    # def write_test_results(self, results, dataset):
+    #     """
+    #     Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
+    #     """
+    #     date = datetime.datetime.now().strftime("%m-%d_%H-%M")
+    #     directory = os.path.join(settings.RESULTS, dataset.dataset)
+    #     if not os.path.isdir(directory): os.makedirs(directory)
+    #     filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
+    #     budget = results[0][3]
+    #     with open(filename, 'w') as f:
+
+    #         msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
+    #                 dataset.dataset, date, len(results), dataset.n_seqs, budget)
+    #         # msg += 100 * 
+    #         msg += ''.join(['=']*100) + '\n'
+    #         f.write(msg)    
+        
+    #         for result in results:
+    #             lines = result[1].summary()
+    #             for line in lines:
+    #                 f.write(line + '\n')
+    #             f.write('Solved in: {}/{}\n'.format(result[2], budget))
+
+    # def write_timed_results(self, solved, unsolved, dataset):
+    #     """
+    #     Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
+    #     """
+    #     date = datetime.datetime.now().strftime("%m-%d_%H-%M")
+    #     directory = os.path.join(settings.RESULTS, dataset.dataset)
+    #     if not os.path.isdir(directory): os.makedirs(directory)
+    #     filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
+    #     budget = results[0][3]
+    #     with open(filename, 'w') as f:
+
+    #         msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} time budget.\n'.format(
+    #                 dataset.dataset, date, len(results), dataset.n_seqs, budget)
+    #         # msg += 100 * 
+    #         msg += ''.join(['=']*100) + '\n'
+    #         f.write(msg)    
+        
+    #         for result in solved:
+    #             lines = result[1].summary()
+    #             for line in lines:
+    #                 f.write(line + '\n')
+    #             f.write('Solved in: {}/{}\n'.format(result[2], budget))
+
+     

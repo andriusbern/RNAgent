@@ -2,7 +2,7 @@ main:
     model: PPO2
     policy: CustomCnnPolicy
     n_workers: 2
-    n_steps: 15000000
+    n_steps: 30000
     multi_discrete: false
     frame_stack: 0
     seed: 1
@@ -80,5 +80,6 @@ environment:
         - 80
 
 testing:
-
+    evaluate_every: 15000
+    test_timeout: 15
 
