@@ -2,15 +2,15 @@ main:
     model: PPO2
     policy: CustomCnnPolicy
     n_workers: 20
-    n_steps: 20000000
+    n_steps: 30000000
     multi_discrete: false
     frame_stack: 0
     seed: 1
 models:
     PPO2:
         gamma: 1
-        n_steps: 512
-        ent_coef: 0.01
+        n_steps: 256
+        ent_coef: 0.005
         learning_rate: 0.9e-04
         vf_coef: 0.5
         max_grad_norm: 0.5
@@ -25,19 +25,22 @@ policies:
     CnnPolicy: {}
     CustomCnnPolicy: 
         filters:
-        - 512
+        - 32
+        - 256
         - 128
         - 16
-        - 16
         kernel_size:
+        # - - 6
         - - 10
+          - 1
+        - - 1
+          - 10
+        - - 1
           - 10
         - - 1
           - 5
-        - - 1
-          - 5
-        - - 1
-          - 5
+        # - - 1
+        #   - 5
         stride:
         - 1
         - 1
@@ -46,7 +49,7 @@ policies:
         lstm: []
         shared:
         - 256
-        - 256
+        - 128
         h_actor:
         - 64
         h_critic:
@@ -65,7 +68,7 @@ environment:
     use_nucleotides: true 
     use_padding: true
     full_state: true
-    kernel_size: 35
+    kernel_size: 25
 
     # Reward
     detailed_comparison: true
@@ -75,14 +78,15 @@ environment:
 
     # Data
     meta_learning: true
-    seq_count: 25000
+    seq_count: 400
     randomize: true
     exact_seq_length: false
     test_set: false
     seq_len:
-
+      - 55
+      - 100
 
 testing:
-    evaluate_every: 1000000
-    test_timeout: 90
+    evaluate_every: 2000000
+    test_timeout: 60
 

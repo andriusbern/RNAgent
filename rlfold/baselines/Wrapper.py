@@ -392,7 +392,7 @@ class SBWrapper(object):
             if evaluate_every is None: evaluate_every = 1000000
             config = dict(
                 total_timesteps=steps if steps is not None else evaluate_every,
-                tb_log_name=self._unique[:-2],
+                tb_log_name=self._unique,
                 reset_num_timesteps=False,
                 seed=self.config['main']['seed'])
         

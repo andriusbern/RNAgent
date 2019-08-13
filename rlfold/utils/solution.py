@@ -80,7 +80,10 @@ class Solution(object):
         if self.str[self.index] == '-':
             self.str[self.index] = self.mapping[action]
         if self.target.seq[self.index] == '(':
-            pair = self.target.paired_sites[self.index]
+            try:
+                pair = self.target.paired_sites[self.index]
+            except:
+                pair = 0
             self.str[pair] = self.mapping[self.reverse_action[action]]
         
     def matrix_action(self, action):
@@ -97,7 +100,10 @@ class Solution(object):
         self.nucleotide_encoding[action, ind1] = 1
 
         if self.target.seq[ind2] == '(':
-            pair = self.target.paired_sites[ind2] + self.kernel_size
+            try:
+                pair = self.target.paired_sites[ind2] + self.kernel_size
+            except:
+                pair = 0
             index = self.reverse_action[action] 
             self.nucleotide_encoding[index, pair] = 1
     
@@ -174,6 +180,9 @@ class Solution(object):
         #     self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
 
         self.reward = reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
+        gcau = self.gcau_content()
+        if gcau['U'] < 0.12:
+            self.reward = self.reward/2 + self.reward/2 * (0.12 - gcau['U'])
         if verbose:
             print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))

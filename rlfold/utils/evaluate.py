@@ -90,8 +90,8 @@ class Tester(object):
                         if solution.hd <= 0:
                             if verbose:
                                 solution.summary(True)
-                                solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2), time_limit])
                                 print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
+                            solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2), time_limit])
         except KeyboardInterrupt:
             pass
         print('Solved {}/{}'.format(len(solved), n_seqs))
@@ -104,14 +104,14 @@ class Tester(object):
 
         return solved, description
         
-    def evaluate(self, time_limit=60):
+    def evaluate(self, time_limit=60, verbose=False, permute=False):
         """
         Run evaluation on test sets and save the model'solution checkpoint
         """
-        r1, desc = self.timed_evaluation('rfam_learn_test', time_limit, verbose=False)
-        r2, _ = self.timed_evaluation('rfam_taneda', time_limit, verbose=False)
-        r3, _ = self.timed_evaluation('rfam_learn_validation', time_limit, verbose=False)
-        r4, _ = self.timed_evaluation('eterna', time_limit, verbose=False)
+        r1, desc = self.timed_evaluation('rfam_learn_test', time_limit, verbose=verbose, permute=permute)
+        r2, _    = self.timed_evaluation('rfam_taneda', time_limit, verbose=verbose, permute=permute)
+        r3, _    = self.timed_evaluation('rfam_learn_validation', time_limit, verbose=verbose, permute=permute)
+        r4, _    = self.timed_evaluation('eterna', time_limit, verbose=verbose, permute=permute)
 
         path = os.path.join(settings.RESULTS, 'training_tests.csv')
         self.write_csv([r1, r2, r3, r4], path, desc, time_limit)
