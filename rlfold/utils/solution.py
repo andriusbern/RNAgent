@@ -174,26 +174,21 @@ class Solution(object):
             self.folded_design, self.fe = fold_fn(self.string)
             self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
-        # if self.config['detailed_comparison']:
-        #     self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
-        # else:
-        #     self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
-
-        self.reward = reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
+        reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
         gcau = self.gcau_content()
         if gcau['U'] < 0.12:
-            self.reward = self.reward/2 + self.reward/2 * (0.12 - gcau['U'])
+            reward = reward/2 + reward/2 * (0.12 - gcau['U'])
         if verbose:
             print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))
-
+        self.reward = reward
         return reward, self.hd
     
     def local_improvement(self, mismatch_indices, budget=20, surroundings=True):
         """
         Performs a local improvement on the mismatch sites 
         """
-        reward = self.reward
+        # reward = self.reward
         step = 0
 
         if surroundings:
@@ -226,7 +221,7 @@ class Solution(object):
                     permutation[pair] = self.mapping[self.reverse_action[action]]
 
             string = ''.join(permutation)
-            reward, hd = self.evaluate(string, permute=False)
+            _, hd = self.evaluate(string, permute=False)
             if hd < min_hd: min_hd = hd
 
             step += 1
@@ -234,7 +229,7 @@ class Solution(object):
             # print(mm1)
             # print(mm2)
             # input()
-        if reward == 1:
+        if hd == 0:
             print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
         return permutation, min_hd
 
