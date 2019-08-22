@@ -7,7 +7,7 @@ import cv2
 import rlfold.settings as settings
 from rlfold.utils import colorize_nucleotides
 from gensim.models.doc2vec import Doc2Vec
-from rlfold.graph2vec import WeisfeilerLehmanMachine
+from rlfold.utils import WeisfeilerLehmanMachine
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ class RnaGraphDesign(gym.Env):
         self.current_nucleotide = 0
         self.done = False
 
-        self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'graph2vec', 'eterna10each128'))
+        self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'utils', 'eterna10each128'))
 
         self.observation_space = gym.spaces.Box(shape=(128,), low=-2., high=2.,dtype=np.float32)
         self.action_space = gym.spaces.Discrete(4)

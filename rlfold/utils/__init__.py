@@ -7,3 +7,4 @@ from .graphSolution import GraphSolution
 from .evaluate import Tester
 from .tfgraph import GraphInspector
 from .vienna  import fold
+from .graph2vec import WeisfeilerLehmanMachine
