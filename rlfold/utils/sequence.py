@@ -23,7 +23,7 @@ class Sequence(object):
         self.file_nr = file_nr
 
         # if graph_based:
-        self.graph, = forgi.load_rna(self.seq)            
+        self.graph = forgi.graph.bulge_graph.BulgeGraph.from_dotbracket(self.seq, dissolve_length_one_stems=False)
             # self.element_dict = self.get_graph()
             # self.primary, self.secondary, self.graph_markers = self.create_strands(self.element_dict)
             # self.graph_based_encoding = self.get_graph_based_encoding()

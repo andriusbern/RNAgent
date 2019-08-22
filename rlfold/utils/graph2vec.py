@@ -1,18 +1,18 @@
 import json
 import glob
 import hashlib
-import logging
+# import logging
 import pandas as pd
 import networkx as nx
 from tqdm import tqdm
 from joblib import Parallel, delayed
-from .parser import parameter_parser
+# from parser import parameter_parser
 import numpy.distutils.system_info as sysinfo
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 import random
 import matplotlib.pyplot as plt
 
-logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO)
+# logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO)
 
 class WeisfeilerLehmanMachine:
     """
@@ -116,13 +116,20 @@ def train(args):
     from rlfold.baselines import get_parameters
     # Get graphs and features from the environment
 
-    env = RnaGraphDesign(get_parameters('RnaDesign'))
+    env = RnaGraphDesign(get_parameters('RnaGraphDesign'))
+    d1 = Dataset(dataset='eterna', start=1, n_seqs=100)
+    d2 = Dataset(dataset='rfam_learn_train', start=1, n_seqs=100)
+    d3 = Dataset(dataset='rfam_learn_validation', start=1, n_seqs=100)
+    d4 = Dataset(dataset='rfam_taneda', start=1, n_seqs=29)
 
-    env.dataset = Dataset(dataset='eterna', start=1, n_seqs=100)
+    seqs = d1.sequences + d2.sequences + d3.sequences + d4.sequences
+
+    env.dataset = Dataset(sequences=seqs)
+    # env.dataset = Dataset(dataset='rfam_learn_train', start=1, n_seqs=500)
     # mappy = {'A':'green', 'U':'blue', 'G':'red', 'C':'purple', -1:'black', '-':'gray'}
     step = 0
     graphs = []
-    for _ in range(1000):
+    for _ in range(329):
         env.reset()
         while not env.done:
             step += 1
@@ -132,8 +139,11 @@ def train(args):
             # print(colorize_nucleotides(self.solution.string), end='\r')
             subgraph = env.solution.current_subgraph
             features = env.solution.get_features()
-            graphs.append([subgraph, features])
-
+            # graphs.append([subgraph, features])
+            machine = WeisfeilerLehmanMachine(subgraph, features, args.wl_iterations)
+            processed = machine.extracted_features
+            feats = TaggedDocument(words = machine.extracted_features, tags=['None'])
+            
             # feats = [mappy[feat] for feat in features.values()]
             # pos = nx.spring_layout(subgraph)
             # plt.cla()
@@ -145,7 +155,7 @@ def train(args):
 
     
 
-    subgraph_features = Parallel(n_jobs = args.workers)(delayed(exctract_features)(graph=g[0], features=g[1], rounds=args.wl_iterations) for g in tqdm(graphs))
+    # subgraph_features = Parallel(n_jobs = args.workers)(delayed(exctract_features)(graph=g[0], features=g[1], rounds=args.wl_iterations) for g in tqdm(graphs))
     model = Doc2Vec(
         subgraph_features,
         size = args.dimensions,
@@ -182,7 +192,7 @@ def train(args):
     #         input('next')
     # except KeyboardInterrupt:
     #     pass
-    model.save('eterna10each128')
+    model.save('train500_4each512')
     # model.infer_vector(graphs[100][1])
     
 
@@ -211,15 +221,23 @@ def main(args):
     # save_embedding(args.output_path, model, graphs, args.dimensions)
 
 def test(args):
-    model = Doc2Vec.load('eterna10each128')
+    model = Doc2Vec.load('train500_4each512')
     from rlfold.environments import RnaGraphDesign
     from rlfold.utils import Dataset
     from rlfold.baselines import get_parameters
     # Get graphs and features from the environment
 
-    env = RnaGraphDesign(get_parameters('RnaDesign'))
+    env = RnaGraphDesign(get_parameters('RnaGraphDesign'))
 
-    env.dataset = Dataset(dataset='eterna', start=1, n_seqs=100)
+    d1 = Dataset(dataset='eterna', start=1, n_seqs=100)
+    d2 = Dataset(dataset='rfam_learn_train', start=1, n_seqs=100)
+    d3 = Dataset(dataset='rfam_learn_validation', start=1, n_seqs=100)
+    d4 = Dataset(dataset='rfam_taneda', start=1, n_seqs=29)
+
+    seqs = d1.sequences + d2.sequences + d3.sequences + d4.sequences
+
+    env.dataset = Dataset(sequences=seqs)
+
     # mappy = {'A':'green', 'U':'blue', 'G':'red', 'C':'purple', -1:'black', '-':'gray'}
     step = 0
     # graphs = []
@@ -257,5 +275,5 @@ def test(args):
 if __name__ == "__main__":
     args = parameter_parser()
     # main(args)
-    # train(args)
     test(args)
+    # test(args)

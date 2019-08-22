@@ -51,10 +51,9 @@ class RnaGraphDesign(gym.Env):
         self.lhd = 500
         self.current_nucleotide = 0
         self.done = False
+        self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'utils', 'train500_4each512'))
 
-        self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'utils', 'eterna10each128'))
-
-        self.observation_space = gym.spaces.Box(shape=(128,), low=-2., high=2.,dtype=np.float32)
+        self.observation_space = gym.spaces.Box(shape=(512,), low=-2., high=2.,dtype=np.float32)
         self.action_space = gym.spaces.Discrete(4)
         
     def next_target(self):

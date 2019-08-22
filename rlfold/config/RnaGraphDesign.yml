@@ -54,20 +54,18 @@ policies:
     CustomCnnLstmPolicy: {}
     CustomMlpPolicy: 
         shared:
-          - 256
+          - 512
           - 256
         h_actor: 
-          - 128
           - 64
         h_critic:
-          - 128
           - 32
     MlpPolicy: {}
 
 environment:
     # Encoding
+
     encoding_type: 2
-    use_nucleotides: true 
     use_padding: true
     full_state: true
     kernel_size: 35
