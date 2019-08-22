@@ -27,7 +27,6 @@ def run_experiment(env_name, parameter_folder , result_folder, verbose=False):
         sep = '\n' +'='*50 + '\n'
         print(sep, 'Training model Nr {}/{}...\n'.format(i+1, len(models)))
         t0 = time.time()
-        model = SBWrapper(env_name, subdir=result_folder).create_model(config_location=parameters)
         steps = model.config['main']['n_steps']
         model.train()
         t = time.time() - t0

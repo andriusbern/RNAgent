@@ -192,9 +192,9 @@ class GraphSolution(object):
                     if item == mismatch: pair = key
 
                 action = random.randint(0, 3)
-                permutation[mismatch] = self.mapping[action]
+                permutation[mismatch] = self.reverse_mapping[action]
                 if pair is not None:
-                    permutation[pair] = self.mapping[self.reverse_action[action]]
+                    permutation[pair] = self.reverse_mapping[self.reverse_action[action]]
 
             string = ''.join(permutation)
             _, hd = self.evaluate(string, permute=False)

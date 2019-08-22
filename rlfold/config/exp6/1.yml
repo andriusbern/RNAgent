@@ -1,7 +1,7 @@
 main:
     model: PPO2
     policy: CustomCnnPolicy
-    n_workers: 20
+    n_workers: 2
     n_steps: 40000000
     multi_discrete: false
     frame_stack: 0
@@ -64,6 +64,7 @@ policies:
 
 environment:
     # Encoding
+    verbose: true
     encoding_type: 2
     use_nucleotides: true 
     use_padding: true
@@ -78,7 +79,7 @@ environment:
 
     # Data
     meta_learning: true
-    seq_count: 400
+    seq_count: 10
     randomize: true
     exact_seq_length: false
     test_set: false

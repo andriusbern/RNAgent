@@ -103,8 +103,8 @@ class RnaDesign(gym.Env):
             self.r = solution.r
             self.done = True
         else:
+            self.r += self.shape_reward()
             solution.find_next_unfilled()
-            # self.r = self.shape_reward(action)
 
         return solution.get_state(), self.r, self.done, {}
 
@@ -120,15 +120,15 @@ class RnaDesign(gym.Env):
         if self.solution.hd <= self.config['write_threshold']:
             self.solution.write_solution()
 
-        if self.config['verbose']:
-            print('Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
-                self.ep,
-                self.target_structure.file_nr, 
-                self.target_structure.len, 
-                self.r, 
-                self.solution.hd, 
-                self.lhd), 
-                end='\r')
+        # if self.config['verbose']:
+        print('Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
+            self.ep,
+            self.target_structure.file_nr, 
+            self.target_structure.len, 
+            self.r, 
+            self.solution.hd, 
+            self.lhd), 
+            end='\r')
 
         if self.meta_learning:
             self.next_target_structure()
@@ -137,10 +137,42 @@ class RnaDesign(gym.Env):
 
         return self.solution.get_state()
 
-    def shape_reward(self, action):
+    def shape_reward(self):
         """
         """
-        return 0
+        reward = 0
+        index  = self.solution.index
+        string = self.solution.string
+        # Internal loops
+
+        if self.target_structure.markers[index] == 'I':
+            if self.target_structure.markers[index-1] != 'I' and string[index] == 'G':
+                reward += 0.01
+            if self.target_structure.markers[index+1] != 'I' and string[index] == 'A':
+                reward += 0.02
+
+        if self.target_structure.markers[index] == 'S':
+            if self.target_structure.markers[index-1] != 'S' or self.target_structure.markers[index+1] != 'S':
+                if string[index] == 'G' or string[index] == 'C':
+                    reward += 0.01
+            else:
+                if string[index] == 'A' or string[index] == 'U':
+                    reward += 0.01
+
+        # if self.target_structure.markers[index] == 'M':
+        #     if self.target_structure[index-1] != 'I' and string[index] == 'A':
+        #         reward += 0.01
+        #     if self.target_structure[index+1] != 'I' and string[index] == 'G':
+        #         reward += 0.01
+        # Add later
+
+        if self.target_structure.markers[index] == 'H':
+            if self.target_structure.markers[index-1] != 'H' and string[index] == 'G':
+                reward += 0.01
+            if self.target_structure.markers[index+1] != 'H' and string[index] == 'A':
+                reward += 0.01
+        # print('                                                                                       {}'.format(reward), end='\r')
+        return reward
 
     ################
     ### Test methods

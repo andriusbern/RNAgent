@@ -38,8 +38,29 @@ class RnaGraphDesign(gym.Env):
         # Logging 
         if 'path' not in self.config.keys():
             self.config['path'] = settings.RESULTS
+        datasets = ['rfam_learn_test', 'rfam_learn_validation', 'rfam_taneda', 'eterna']
+        if self.config.get('test_set') is not None:
+            sequences = []
+
+            # Migrate to a function
+            if self.config['test_set']:
+                for dataset in datasets:
+                    n_seqs = 29 if dataset=='rfam_taneda' else 100
+                    data = Dataset(
+                        dataset=dataset, 
+                        start=1, 
+                        n_seqs=n_seqs, 
+                        )
+
+                    sequences += data.sequences
+                self.dataset = Dataset(sequences=sequences)
+
+            else:
+                self.dataset = Dataset(
+                    length=self.config['seq_len'],
+                    n_seqs=self.config['seq_count'])
+
         
-        self.dataset = Dataset(length=self.config['seq_len'], n_seqs=self.config['seq_count']) # 
         self.next_target()
         self.folded_design = ''
         self.good_solutions = []
@@ -52,6 +73,7 @@ class RnaGraphDesign(gym.Env):
         self.current_nucleotide = 0
         self.done = False
         self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'utils', 'train500_4each512'))
+        self.permute = self.config['permute']
 
         self.observation_space = gym.spaces.Box(shape=(512,), low=-2., high=2.,dtype=np.float32)
         self.action_space = gym.spaces.Discrete(4)
@@ -63,10 +85,15 @@ class RnaGraphDesign(gym.Env):
         if self.randomize:
             self.target_structure = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
         else:
-            self.target_structure = self.dataset.sequences[self.current_sequence]
             self.current_sequence += 1
             if self.current_sequence >= self.dataset.n_seqs - 1:
                 self.current_sequence = 0
+            try:
+                self.target_structure = self.dataset.sequences[self.current_sequence]
+            except:
+                self.current_sequence = 0
+                self.target_structure = self.dataset.sequences[self.current_sequence]
+            
         self.solution = GraphSolution(self.target_structure, self.config)
 
     def step(self, action):
@@ -77,7 +104,7 @@ class RnaGraphDesign(gym.Env):
         self.solution.graph_action(action)
 
         if self.solution.index == self.target_structure.len - 1:
-            reward, _ = self.solution.evaluate(self.solution.string)
+            reward, _ = self.solution.evaluate(self.solution.string, permute=self.permute)
             self.done = True
         else:
             self.solution.find_next_unfilled()
@@ -179,15 +206,25 @@ class RnaGraphDesign(gym.Env):
                 print(colorize_nucleotides(self.solution.string), end='\r')
                 subgraph = self.solution.current_subgraph
                 features = self.solution.get_features()
+                machine = WeisfeilerLehmanMachine(subgraph, features, 2)
+                processed = machine.extracted_features
+                embedding = self.embedder.infer_vector(processed)
 
+                plt.figure(1)
+                plt.cla()
+                plt.ylim([-.8, .8])
+                plt.plot(embedding)
+                plt.show()
+
+                plt.figure(2)
                 feats = [mappy[feat] for feat in features.values()]
                 pos = nx.spring_layout(subgraph)
-                plt.cla()
                 # subgraph = nx.Graph()
                 # nx.set
                 nx.draw(subgraph, pos, node_color=feats)
                 plt.show(); plt.pause(0.01)
                 if pause: input()
+                plt.cla()
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
@@ -208,6 +245,9 @@ class RnaGraphDesign(gym.Env):
 
 if __name__ == "__main__":
     from rlfold.baselines import SBWrapper, get_parameters
-    env = RnaGraphDesign(get_parameters('RnaDesign'))
+    config = get_parameters('RnaGraphDesign')
+    config['environment']['seq_count'] = 1
+    config['environment']['seq_len'] = [105, 106]
+    env = RnaGraphDesign(config)
     env.visual_test()
 
