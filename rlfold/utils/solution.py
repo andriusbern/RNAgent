@@ -2,7 +2,9 @@ import numpy as np
 import copy, random, os, datetime
 from rlfold.utils import Sequence, hamming_distance
 from rlfold.utils import colorize_nucleotides, highlight_mismatches
+from rlfold.interface import create_browser, show_rna
 import rlfold.settings as settings
+import networkx as nx
 
 if settings.os == 'linux':
     import RNA
@@ -15,14 +17,14 @@ class Solution(object):
     """
     Class for logging generated nucleotide sequence solutions
     """
-    def __init__(self, target, config, dataset=None):
+    def __init__(self, target, config):
 
         self.config = config
         self.target = target
         self.mapping         = {0:'A', 1:'C', 2:'G', 3:'U'}
         self.reverse_mapping = {'A':0, 'C':1, 'G':2, 'U':3}
         self.reverse_action  = {0:3, 1:2, 2:1, 3:1}
-
+        
         self.str = None
         self.use_full_state = self.config['full_state']
         if 'use_padding' in self.config.keys():
@@ -46,11 +48,13 @@ class Solution(object):
         """
         Generate the representations of the nucleotide sequence of required length based on the the target structure
         """
+
         self.hd = 100
         self.reward = 0
         k = self.kernel_size
         size, length = self.target.structure_encoding.shape
         self.str = ['-'] * length # List of chars ['-', 'A', "C", "G", "U"]
+
         if self.use_padding:
             self.nucleotide_encoding = np.zeros([4, length + k * 2])
             # Padded target sequence
@@ -58,7 +62,7 @@ class Solution(object):
             self.structure_encoding[:,k:-k] = self.target.structure_encoding
         else:
             self.nucleotide_encoding = np.zeros([4, self.target.len]) # One-hot representation of the generated nucleotide sequence
-
+        
     @property
     def string(self):
         """
@@ -75,6 +79,11 @@ class Solution(object):
             return self.nucleotide_encoding[:, self.kernel_size:-self.kernel_size]
         else:
             return self.nucleotide_encoding
+
+    # def graph_action(self, action):
+    #     """
+    #     """
+    #     self.graph_based_encoding
 
     def str_action(self, action):
         if self.str[self.index] == '-':
@@ -111,7 +120,9 @@ class Solution(object):
         """
         Perform an appropriate action based on config
         """
+
     
+
     def find_next_unfilled(self):
         """
         Go to the next unfilled nucleotide
@@ -142,18 +153,7 @@ class Solution(object):
             else:
                 state = self.structure_encoding[:, start:end]
             state = np.expand_dims(state, axis=2)
-        # else:
-        #     start = np.clip(self.index - self.kernel_size, 0, self.target.len - self.kernel_size*2-1)
-        #     target = self.target.bin[start:start+self.kernel_size*2]
 
-        #     if self.use_full_state:
-        #         current = self.nucleotide_encoding[:, start:start+self.kernel_size*2]
-        #         state = np.vstack([target,current])
-        #         state = np.expand_dims(state, axis=2)
-        #     else:
-        #         state = target
-        #         state = np.expand_dims(state, axis=1)
-        #         state = np.expand_dims(state, axis=2)
         return state
     
     def evaluate(self, string=None, verbose=False, permute=False):
@@ -238,7 +238,6 @@ class Solution(object):
         A reward that penalizes solutions that overuse or underuse nucleotide types.
         """
 
-
     def gcau_content(self):
         """
         Get the proportions of each nucleotide in the generated solution
@@ -298,3 +297,17 @@ class Solution(object):
         with open(os.path.join(path), 'a+') as f:
             for line in lines:
                 f.write(line + '\n')
+
+    def visualize(self, auto=False):
+        """
+        Call the forna container and visualize the dataset
+        """
+        driver = create_browser('display')
+        
+        show_rna(self.folded_design.seq, self.string, driver=driver, html='display')
+        print(self.summary())
+        # print(self.target.seq)
+        # print(seq.markers)
+        input()
+        # if not auto: input()
+        # else: time.sleep(2)

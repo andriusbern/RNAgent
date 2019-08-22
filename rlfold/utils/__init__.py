@@ -3,6 +3,7 @@ from .utils import colorize_nucleotides, highlight_mismatches
 from .sequence import Sequence
 from .dataset import Dataset
 from .solution import Solution
+from .graphSolution import GraphSolution
 from .evaluate import Tester
 from .tfgraph import GraphInspector
 from .vienna  import fold

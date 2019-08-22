@@ -61,8 +61,7 @@ class Dataset(object):
         for seq in self.sequences:
             show_rna(seq.seq, None, driver=driver, html='dataset')
             print(seq.summary())
-            print(seq.seq)
-            print(seq.markers)
+            print(len(seq.primary), len(seq.secondary), seq.len)
             if not auto: input()
             else: time.sleep(2)
 

@@ -1,12 +1,17 @@
 import sys
 # sys.path.append('/usr/local/lib/python3.6/site-packages')
 import numpy as np
-from rlfold.utils import Dataset, Solution, Sequence#, Tester
+from rlfold.utils import Dataset, GraphSolution, Sequence
 import gym, time, os, random
 import cv2
 import rlfold.settings as settings
 from rlfold.utils import colorize_nucleotides
+from gensim.models.doc2vec import Doc2Vec
+from rlfold.graph2vec import WeisfeilerLehmanMachine
 
+import networkx as nx
+import matplotlib.pyplot as plt
+plt.ion()
 
 """
 TODO:
@@ -15,12 +20,12 @@ TODO:
         2. Simple ternary representation
 """
 
-class RnaDesign(gym.Env):
+class RnaGraphDesign(gym.Env):
     def __init__(self, config=None, rank=None):
 
         self.config = config['environment']
-        self.env_id = rank
         self.meta_learning = self.config['meta_learning']
+        self.env_id = rank
         self.state = None
         self.validator = None
 
@@ -40,11 +45,6 @@ class RnaDesign(gym.Env):
         self.good_solutions = []
         self.prev_solution = None
 
-        # Parameters
-        self.use_full_state = self.config['full_state']
-        self.kernel_size = self.config['kernel_size']
-        self.reward_exp = self.config['reward_exp']
-
         # Stats
         self.ep  = 0
         self.r   = 0
@@ -52,48 +52,43 @@ class RnaDesign(gym.Env):
         self.current_nucleotide = 0
         self.done = False
 
-        if self.use_full_state:
-            self.observation_space = gym.spaces.Box(shape=(6, self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
-        else:
-            self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1, dtype=np.uint8)
+        self.embedder = Doc2Vec.load(os.path.join(settings.MAIN_DIR, 'graph2vec', 'eterna10each128'))
+
+        self.observation_space = gym.spaces.Box(shape=(128,), low=-2., high=2.,dtype=np.float32)
         self.action_space = gym.spaces.Discrete(4)
-
-    def add_validator(self, model):
-        """
-        Add the validator object as an attribute
-
-        This is mainly a workaround to run evaluation on the validation sets while training
-        """
-        self.tester = Tester(self, model)
         
     def next_target(self):
         """
-        Get the next sequence in the dataset
+        Get the next target_structure secondary structure in the dataset
         """
         if self.randomize:
-            self.target = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
+            self.target_structure = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
         else:
-            self.target = self.dataset.sequences[self.current_sequence]
+            self.target_structure = self.dataset.sequences[self.current_sequence]
             self.current_sequence += 1
             if self.current_sequence >= self.dataset.n_seqs - 1:
                 self.current_sequence = 0
-        self.solution = Solution(self.target, self.config)
+        self.solution = GraphSolution(self.target_structure, self.config)
 
     def step(self, action):
         """
         """
-        self.r = 0
+        reward = 0
         self.solution.str_action(action)
-        self.solution.matrix_action(action)
+        self.solution.graph_action(action)
 
-        if self.solution.index == self.target.len - 1:
-            self.solution.r = self.r = self.solution.evaluate(self.solution.string)
+        if self.solution.index == self.target_structure.len - 1:
+            reward, _ = self.solution.evaluate(self.solution.string)
             self.done = True
         else:
             self.solution.find_next_unfilled()
-        self.state = self.solution.get_state()
-
-        return self.state, self.r, self.done, {}
+        self.r = reward
+        self.solution.get_new_subgraph()
+        self.state = self.solution.get_features()
+        machine = WeisfeilerLehmanMachine(self.solution.current_subgraph, self.state, 2)
+        processed = machine.extracted_features
+        embedding = self.embedder.infer_vector(processed)
+        return np.array(embedding), reward, self.done, {}
 
     def reset(self):
         """
@@ -104,18 +99,21 @@ class RnaDesign(gym.Env):
         self.done = False
         if self.solution.hd < self.lhd: self.lhd = self.solution.hd
         if self.solution.hd <= self.config['write_threshold']:
-            self.solution.write_solution()
+            # self.solution.write_solution()
             self.good_solutions.append(self.solution)
         print('                                    Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'
-            .format(self.ep, self.target.file_nr, self.target.len, self.r, self.solution.hd, self.lhd), end='\r')
+            .format(self.ep, self.target_structure.file_nr, self.target_structure.len, self.r, self.solution.hd, self.lhd), end='\r')
         
-        self.state = self.solution.get_state()
         if self.meta_learning:
             self.next_target()
         else:
-            self.solution = Solution(self.target, self.config)
+            self.solution = GraphSolution(self.target_structure, self.config)
+        self.state = self.solution.get_features()
+        machine = WeisfeilerLehmanMachine(self.solution.current_subgraph, self.state, 2)
+        processed = machine.extracted_features
+        embedding = self.embedder.infer_vector(processed)
     
-        return self.state
+        return np.array(embedding)
 
     # Misc
     def test(self, s=False, b=False):
@@ -136,8 +134,8 @@ class RnaDesign(gym.Env):
             while not self.done:
                 action = self.action_space.sample()
                 _, _, self.done, _ = self.step(action)
-                print(self.target.seq)
-                print(self.solution.string, end='\r\r\r') #' ', self.target.seq, '\n ',
+                print(self.target_structure.seq)
+                print(self.solution.string, end='\r\r\r') #' ', self.target_structure.seq, '\n ',
                 # time.sleep(0.05)
                 input()
             self.next_target()
@@ -152,7 +150,7 @@ class RnaDesign(gym.Env):
             try:
                 self.test()
             except KeyError:
-                print(self.target.seq)
+                print(self.target_structure.seq)
                 print('Bad: {}'.format(self.solution.index))
                 # del self.dataset.sequences[self.solution.index - 1]
             self.next_target()
@@ -164,30 +162,36 @@ class RnaDesign(gym.Env):
                 action = self.action_space.sample()
                 _, _, self.done, _ = self.step(action)
 
-    def visual_test(self, pause=False):
+    def visual_test(self, pause=True):
         name = 'Visual Test'
-        cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(name, 1000, 200)
-        
+        # cv2.namedWindow(name, cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow(name, 1000, 200)
+        self.dataset = Dataset(dataset='eterna', start=1, n_seqs=10)
+        mappy = {'A':'green', 'U':'blue', 'G':'red', 'C':'purple', 'O':'black', '-':'gray'}
+        step = 0
         for _ in range(20):
             self.reset()
             while not self.done:
+                step += 1
+                print(step)
                 action = self.action_space.sample()
-                image, _, self.done, _ = self.step(action)
-                if self.use_full_state:
-                    image *= 120
-                    # image[:, self.solution.current_nucleotide] = 100
-                    # image[:,start] = 255
-                    # image[:,start+self.solution.kernel_size*2] = 255
-                    print(colorize_nucleotides(self.solution.string), end='\r')
-                im = np.asarray(image, dtype=np.uint8)
-                cv2.imshow(name, im)
-                cv2.waitKey(1)
+                state, _, self.done, _ = self.step(action)
+                print(state)
+                print(colorize_nucleotides(self.solution.string), end='\r')
+                subgraph = self.solution.current_subgraph
+                features = self.solution.get_features()
+
+                feats = [mappy[feat] for feat in features.values()]
+                pos = nx.spring_layout(subgraph)
+                plt.cla()
+                # subgraph = nx.Graph()
+                # nx.set
+                nx.draw(subgraph, pos, node_color=feats)
+                plt.show(); plt.pause(0.01)
                 if pause: input()
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
-        cv2.destroyWindow(name)
 
     def speed_test(self):
 
@@ -205,6 +209,6 @@ class RnaDesign(gym.Env):
 
 if __name__ == "__main__":
     from rlfold.baselines import SBWrapper, get_parameters
-    env = RnaDesign(get_parameters('RnaDesign'))
-    env.speed_test()
+    env = RnaGraphDesign(get_parameters('RnaDesign'))
+    env.visual_test()
 

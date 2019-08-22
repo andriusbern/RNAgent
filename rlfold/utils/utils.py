@@ -49,11 +49,11 @@ def colorize_nucleotides(sequence):
     """
     Color coding for the console output for nucleotide sequences
     """
-    mapping = {'A':'\033[4;30;42mA\033[0m',
-               'U':'\033[4;30;46mU\033[0m',
-               'G':'\033[4;30;41mG\033[0m',
-               'C':'\033[4;30;45mC\033[0m',
-               '-':'\033[4;37;40m-\033[0m'}    
+    mapping = {'A':'\033[2;30;42mA\033[0m',
+               'U':'\033[2;30;46mU\033[0m',
+               'G':'\033[2;30;41mG\033[0m',
+               'C':'\033[2;30;45mC\033[0m',
+               '-':'\033[2;37;40m-\033[0m'}    
     return ''.join([mapping[x] for x in sequence])
 
 def highlight_mismatches(seq1, seq2):

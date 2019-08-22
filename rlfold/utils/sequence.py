@@ -1,16 +1,17 @@
 import numpy as np
+import forgi, math
+import matplotlib.pyplot as plt
+from rlfold.interface import create_browser, show_rna
 
 class Sequence(object):
     """
     Dot-bracket notation sequence of RNA secondary structure
     Contains methods for preprocessing, etc.
     """
-    def __init__(self, sequence, file_id=None, file_nr=None, encoding_type=0):
+    def __init__(self, sequence, file_id=None, file_nr=None, encoding_type=0, graph_based=False):
         self.seq = sequence
         self.len = len(sequence)
         self.bin = self.to_binary()
-        self.file_id = file_id
-        self.file_nr = file_nr
         self.db_ratio = float(sum([1 if x == '.' else 0 for x in self.seq])) / self.len
         self.loops = self._count_loops()
         self.n_loops = len(self.loops)
@@ -18,6 +19,14 @@ class Sequence(object):
         self.markers, self.counter = self.sequential_parsing()
         self.encoding_type = encoding_type
         self.structure_encoding = self.to_matrix()
+        self.file_id = file_id
+        self.file_nr = file_nr
+
+        # if graph_based:
+        self.graph, = forgi.load_rna(self.seq)            
+            # self.element_dict = self.get_graph()
+            # self.primary, self.secondary, self.graph_markers = self.create_strands(self.element_dict)
+            # self.graph_based_encoding = self.get_graph_based_encoding()
         
     def __repr__(self):
         return self.seq
@@ -56,13 +65,13 @@ class Sequence(object):
             template = self.seq
             rows = 3
 
-        # Openings, closings, internal loops, hairpin loops, multiloops, ends
+        # Openings, closings, internal loops, next_hairpin loops, multiloops, ends
         if self.encoding_type == 2:
             mapping = {'O': 0, 'C': 1, 'I': 2, 'H': 3, 'M':4, 'E':5}
             template = self.markers
             rows = 6
         
-        # Brackets, internal loops, hairpin loops, multiloops
+        # Brackets, internal loops, next_hairpin loops, multiloops
         if self.encoding_type == 3:
             mapping = {'O': 0, 'C': 0, 'I': 1, 'H': 2, 'M':3, 'E':3}
             template = self.markers
@@ -77,11 +86,27 @@ class Sequence(object):
                 pass
 
         return matrix
+
+    def get_graph_based_encoding(self):
+        """
+
+        """
+        if self.encoding_type == 2:
+            mapping = {'S': -2, 's': -1, 'h':1, 'i':2, 'f':3, 'm':3, 't':3}
+
+        matrix = np.zeros([3, len(self.graph_markers)])
+        for index in range(self.len):
+            matrix[0,index] = mapping[self.graph_markers[index]]
+
+        matrix[1,:] = self.primary
+        matrix[2,:] = self.secondary
+
+        return matrix
              
     def find_complementary(self):
         """
         Find complementary nucleotide indices by expanding outwards
-        from hairpin loop edges
+        from next_hairpin loop edges
         """
         seq = [x for x in self.seq]
         pairs = {}
@@ -142,7 +167,7 @@ class Sequence(object):
         """
         Creates markers for 
             1. Openings and closings [ (   ) ]
-            1. Multiloops, hairpin loops, internal loops/mismatches, dangling ends
+            1. Multiloops, next_hairpin loops, internal loops/mismatches, dangling ends
         """
         markers = ['N'] * self.len
         counter = dict(M=0, H=0, I=0, E=0)
@@ -197,3 +222,144 @@ class Sequence(object):
                 counter['E'] += 1
             
         return ''.join(markers), counter
+    
+    def get_graph(self):
+        """
+        Parse the graph using forgi
+        Store the element representations
+        """
+        
+        # elements = self.graph.defines
+        # start = elements.get('f0')
+        # end   = elements.get('t0')
+
+        # if start is not None and end is not None:
+
+        # Implement start and end joining if necessary
+
+        strand_dict = {}
+        for element, indices in self.graph.defines.items():
+            dimensions = list(self.graph.get_node_dimensions(element))
+            if dimensions[1] == 1000 or dimensions[1] == -1:
+                dimensions[1] = 0
+            length = max(dimensions)
+            strand1 = [0] * length
+            strand2 = [0] * length
+            description = [element[0]] * length
+            # Stem ends
+            if element[0] == 's':
+                description[0], description[-1] = 'S', 'S'
+
+            shift1, shift2 = 0, 0
+            # try:
+            if len(indices) == 2:
+                count1 = indices[1] - indices[0]
+                if dimensions[0] > dimensions[1]:
+                    for i in range(length):
+                        strand1[i] = indices[0] + i
+                else:
+                    for i in range(length):
+                        strand2[i] = indices[1] - i
+            if len(indices) == 4:
+                count1 = indices[1] - indices[0]
+                count2 = indices[3] - indices[2]
+
+                if count1 > count2: shift2 = (count1 - count2) // 2
+                else: shift1 = (count2 - count1) // 2
+
+                for i in range(dimensions[0]):
+                    strand1[shift1 + i] = indices[0] + i
+                for i in range(dimensions[1]):
+                    strand2[shift2 + i] = indices[3] - i
+
+
+            # except Exception as e: 
+            #     print(e)
+
+            strand_dict[element] = [strand1, strand2, description]
+
+        return strand_dict
+
+    def create_strands(self, dic):
+        """
+        
+        """
+        current_element = self.graph.get_elem(1)
+        last_el  = self.graph.get_elem(self.len)
+        n_hairpins = len(list(self.graph.hloop_iterator()))
+        visited = {}
+        for key in dic.keys():
+            visited[key] = 0
+
+        first = dic[current_element][0]
+        second = dic[current_element][1]
+        description = dic[current_element][2]
+        visited[current_element] += 1
+
+        try:
+            if n_hairpins > 0:
+                elements = list(self.graph.hloop_iterator())
+                elements.append(last_el)
+                for next_hairpin in elements:
+                    
+                    path = self.graph.shortest_path(current_element, next_hairpin)
+                    for element in path[1:]:
+
+                        if visited[element] == 0:
+                            first = first + dic[element][0]
+                            second = second + dic[element][1]
+                        else:
+                            first = first + dic[element][1][::-1]
+                            second = second + dic[element][0][::-1]
+
+                        visited[element] += 1
+                    current_element = next_hairpin
+
+        except Exception as e:
+            print(e)
+
+        return first, second, description
+
+    
+    def get_subgraph(self, nucleotide):
+        """
+        Gets the subgraph surrounding the current nucleotide
+
+        Returns a networkx subgraph
+        """
+
+        element = self.graph.get_elem(nucleotide)
+        connected = self.graph.connections(element)
+
+        # In case of a multiloop or external loop add components surrounding the flanking
+        # stems as well
+        if element[0] == 'm' or element[0] == 't' or element == 'f':
+            try:
+                connected += self.graph.connections(connected[0]) + self.graph.connections(connected[1])
+            except:
+                pass
+        connected += [element]
+
+        # for element in connected:
+        #     if element[0] == 'm' and self.graph.get_length(element) == 0:
+        #         connected += self.graph.connections(element)
+
+        nucleotides = self.graph.elements_to_nucleotides(connected)
+        nx_graph = self.graph.to_networkx()
+        subgraph = nx_graph.subgraph(nucleotides)
+
+        return subgraph
+
+    def visualize(self):
+        driver = create_browser('dataset')
+        show_rna(self.seq, None, driver=driver, html='dataset')
+        print(self.summary())
+
+
+
+
+
+        
+
+
+

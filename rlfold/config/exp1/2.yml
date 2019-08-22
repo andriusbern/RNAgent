@@ -20,6 +20,8 @@ models:
         cliprange: 0.1
         full_tensorboard_log: false
         verbose: 0
+    
+    
 policies:
     CnnPolicy: {}
     CustomCnnPolicy: 

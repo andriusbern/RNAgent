@@ -10,46 +10,51 @@ from rlfold.interface import create_browser, show_rna
 
 """
 TODO:
-    1. State representation 
+    1. State representation
         1. Binary matrices - row 1-2 - dots brackets, row 3-7 or 3-6 - nothing/nucleotides
         2. Simple ternary representation
 """
-
+ 
 class RnaDesign(gym.Env):
     def __init__(self, config=None, rank=None):
-
+        
         self.config = config['environment']
         self.env_id = rank
         self.meta_learning = self.config['meta_learning']
-        self.state = None
-        self.validator = None
 
-        # Logging 
+        # Logging
         if 'path' not in self.config.keys():
             self.config['path'] = settings.RESULTS
- 
+
         self.randomize = self.config['randomize']
         encoding_type = self.config.get('encoding_type')
+        datasets = ['rfam_learn_test', 'rfam_learn_validation', 'rfam_taneda', 'eterna']
 
         if self.config.get('test_set') is not None:
             sequences = []
+
+            # Migrate to a function
             if self.config['test_set']:
-                for dataset in ['rfam_learn_test', 'rfam_learn_validation', 'rfam_taneda', 'eterna']:
+                for dataset in datasets:
                     n_seqs = 29 if dataset=='rfam_taneda' else 100
-                    data = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=encoding_type)
+                    data = Dataset(
+                        dataset=dataset, 
+                        start=1, 
+                        n_seqs=n_seqs, 
+                        encoding_type=encoding_type)
+
                     sequences += data.sequences
                 self.dataset = Dataset(sequences=sequences)
+
             else:
                 self.dataset = Dataset(
                     length=self.config['seq_len'],
                     n_seqs=self.config['seq_count'],
-                    encoding_type=encoding_type
-                )
+                    encoding_type=encoding_type)
 
         self.current_sequence = 0
-        self.next_target()
+        self.next_target_structure()
         self.prev_solution = None
-        self.permute = self.config['permute']
 
         # Parameters
         self.use_full_state = self.config['full_state']
@@ -60,88 +65,85 @@ class RnaDesign(gym.Env):
         self.ep  = 0
         self.r   = 0
         self.lhd = 500
-        self.current_nucleotide = 0
         self.done = False
-        size = np.shape(self.solution.get_state())
-
+        state_size = np.shape(self.solution.get_state())
 
         if self.use_full_state:
-            self.observation_space = gym.spaces.Box(shape=(size[0], self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
+            self.observation_space = gym.spaces.Box(shape=(state_size[0], self.kernel_size*2, 1), low=0, high=1,dtype=np.uint8)
         else:
             self.observation_space = gym.spaces.Box(shape=(self.kernel_size*2,1,1), low=0, high=1, dtype=np.uint8)
         self.action_space = gym.spaces.Discrete(4)
 
-    def add_validator(self, model):
+    def next_target_structure(self):
         """
-        Add the validator object as an attribute
-
-        This is mainly a workaround to run evaluation on the validation sets while training
-        """
-        self.tester = Tester(self, model)
-        
-    def next_target(self):
-        """
-        Get the next sequence in the dataset
+        Get the next target secondary structure from the dataset
         """
         if self.randomize:
-            self.target = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
+            self.target_structure = self.dataset.sequences[random.randint(0, self.dataset.n_seqs-1)]
         else:
-            self.target = self.dataset.sequences[self.current_sequence]
-            self.current_sequence += 1
-            if self.current_sequence >= len(self.dataset.sequences) - 1:
-                self.current_sequence = 0
-        self.solution = Solution(self.target, self.config)
+            self.current_sequence = (self.current_sequence + 1) % len(self.dataset.sequences)
+            self.target_structure = self.dataset.sequences[self.current_sequence]
+
+        self.solution = Solution(self.target_structure, self.config)
 
     def step(self, action):
         """
+        Generate a nucleotide at the current location
         """
+        solution = self.solution
         self.r = 0
-        self.solution.str_action(action)
-        self.solution.matrix_action(action)
+        solution.str_action(action)
+        solution.matrix_action(action)
 
-        if self.solution.index == self.target.len - 1:
-            self.solution.r, _ = self.solution.evaluate(self.solution.string, permute=self.permute)
-            self.r = self.solution.r
+        if solution.index == self.target_structure.len - 1:
+            solution.r, _ = self.solution.evaluate(
+                string=solution.string, 
+                permute=self.config['permute'])
+
+            self.r = solution.r
             self.done = True
         else:
-            self.solution.find_next_unfilled()
-        self.state = self.solution.get_state()
+            solution.find_next_unfilled()
+            # self.r = self.shape_reward(action)
 
-        return self.state, self.r, self.done, {}
+        return solution.get_state(), self.r, self.done, {}
 
     def reset(self):
         """
-        Initialize the sequence
+        Reinitialize the generated sequence and/or target
         """
-        self.prev_solution = self.solution 
+        self.prev_solution = self.solution
         self.ep += 1
         self.done = False
+
         if self.solution.hd < self.lhd: self.lhd = self.solution.hd
         if self.solution.hd <= self.config['write_threshold']:
             self.solution.write_solution()
-        print('                                    Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'
-            .format(self.ep, self.target.file_nr, self.target.len, self.r, self.solution.hd, self.lhd), end='\r')
-        
-        self.state = self.solution.get_state()
-        if self.meta_learning:
-            self.next_target()
-        else:
-            self.solution = Solution(self.target, self.config)
-    
-        return self.state
 
-    # Misc
-    def test(self, s=False, b=False):
+        if self.config['verbose']:
+            print('Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
+                self.ep,
+                self.target_structure.file_nr, 
+                self.target_structure.len, 
+                self.r, 
+                self.solution.hd, 
+                self.lhd), 
+                end='\r')
+
+        if self.meta_learning:
+            self.next_target_structure()
+        else:
+            self.solution = Solution(target=self.target_structure, config=self.config)
+
+        return self.solution.get_state()
+
+    def shape_reward(self, action):
         """
-        Test the current seq for errors
         """
-        self.reset()
-        while not self.done:
-            action = self.action_space.sample()
-            state, _, self.done, _ = self.step(action)
-            if s:
-                print(state, end='\r')
-                time.sleep(0.01)
+        return 0
+
+    ################
+    ### Test methods
 
     def test_run(self):
         for _ in range(1):
@@ -149,26 +151,12 @@ class RnaDesign(gym.Env):
             while not self.done:
                 action = self.action_space.sample()
                 _, _, self.done, _ = self.step(action)
-                print(self.target.seq)
-                print(self.solution.string, end='\r\r\r') #' ', self.target.seq, '\n ',
+                print(self.target_structure.seq)
+                print(self.solution.string, end='\r\r\r') #' ', self.target_structure.seq, '\n ',
                 # time.sleep(0.05)
                 input()
-            self.next_target()
+            self.next_target_structure()
         self.reset()
-    
-    def parse_data(self):
-        """
-        Tests whether all the sequences are correctly parsed
-        """
-        for i in range(self.dataset.n_seqs - 1):
-            print(i)
-            try:
-                self.test()
-            except KeyError:
-                print(self.target.seq)
-                print('Bad: {}'.format(self.solution.index))
-                # del self.dataset.sequences[self.solution.index - 1]
-            self.next_target()
 
     def random_sampling_test(self,runs=1000):
         for _ in range(runs):
@@ -182,29 +170,30 @@ class RnaDesign(gym.Env):
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(name, 1000, 200)
 
-        driver = create_browser('dataset')
+        driver = create_browser('double')
 
         for _ in range(20):
             self.reset()
-            show_rna(self.target.seq, None, driver, 0, 'dataset')
-            print(self.target.markers)
-            print(self.target.seq)
+            show_rna(self.target_structure.seq, None, driver, 0, 'double')
+            print(self.target_structure.markers)
+            print(self.target_structure.seq)
             while not self.done:
                 action = self.action_space.sample()
                 image, _, self.done, _ = self.step(action)
+
                 if self.use_full_state:
                     image *= 120
-                    # image[:, self.solution.current_nucleotide] = 100
-                    # image[:,start] = 255
-                    # image[:,start+self.solution.kernel_size*2] = 255
                     print(colorize_nucleotides(self.solution.string), end='\r')
+
                 im = np.asarray(image, dtype=np.uint8)
-                cv2.imshow(name, im)
-                cv2.waitKey(1)
+                cv2.imshow(name, im); cv2.waitKey(1)
                 if pause: input()
+
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
+            show_rna(self.solution.folded_design.seq, self.solution.string, driver, 1, 'double')
+            if pause: input()
         cv2.destroyWindow(name)
 
     def speed_test(self):
@@ -217,12 +206,9 @@ class RnaDesign(gym.Env):
                 action = self.action_space.sample()
                 image, _, self.done, _ = self.step(action)
 
-                    # image[:, self.solution.current_nucleotide] = 100
-                    # image[:,start] = 255
-                    # image[:,start+self.solution.kernel_size*2] = 255
 
 if __name__ == "__main__":
     from rlfold.baselines import SBWrapper, get_parameters
     env = RnaDesign(get_parameters('RnaDesign'))
-    env.speed_test()
-
+    # env.speed_test()
+    env.visual_test()

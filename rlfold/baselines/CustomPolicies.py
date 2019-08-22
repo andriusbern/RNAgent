@@ -1,8 +1,9 @@
-from stable_baselines.common.policies import ActorCriticPolicy, register_policy, RecurrentActorCriticPolicy
+from stable_baselines.common.policies import ActorCriticPolicy, register_policy, RecurrentActorCriticPolicy, FeedForwardPolicy
 import tensorflow as tf
 from stable_baselines.a2c.utils import conv, linear, conv_to_fc
 import rlfold.settings as settings
 import numpy as np
+import copy
 
 
 def conv1d(input_tensor, scope, *, n_filters, filter_size, stride,
@@ -155,8 +156,17 @@ class CustomMixedCnnPolicy(ActorCriticPolicy):
 class CustomLstmPolicy():
     pass
 
-class CustomFcPolicy():
-    pass
+class CustomMlpPolicy(FeedForwardPolicy):
+    def __init__(self, sess, ob_space, ac_space, n_env, n_steps, n_batch, reuse=False, params=None, **kwargs):
+        config = copy.deepcopy(params)
+        net_architecture = config['shared']
+        net_architecture.append(dict(pi=config['h_actor'],
+                                     vf=config['h_critic']))
+
+        print(net_architecture)
+        super(CustomMlpPolicy, self).__init__(
+            sess, ob_space, ac_space, n_env, n_steps, n_batch, reuse=False, net_arch=net_architecture, feature_extraction="mlp")
+
 
 
 class CustomDDPGPolicy():

@@ -104,7 +104,7 @@ def get_parameters(env_name, model_path=None, config_name=None, config_location=
     Method for getting the YAML config file of the RL model, policy and environment
     Get config by prioritizing:
         1. Specific config file: /config/[name].yml
-        2. From model's directory (in case of loading) /trained_models/_/_/_/parameters.yml
+        2. From model'solution directory (in case of loading) /trained_models/_/_/_/parameters.yml
         3. /config/[env_name].yml
         4. /config/[env_type].yml
         5. /config/defaults.yml
@@ -415,8 +415,8 @@ class SBWrapper(object):
             self.test_state = self.env.reset()
             self.done = False
         
-        action, s = self.model.predict(self.test_state, deterministic=True)
-        print(action, s)
+        action, solution = self.model.predict(self.test_state, deterministic=True)
+        print(action, solution)
         self.test_state, _, _, _ = self.model.env.step(action)
         
         img = self.test_state.squeeze()
@@ -441,29 +441,44 @@ class SBWrapper(object):
                 plt.cla(); plt.imshow(img); plt.show(); plt.pause(delay)
         self.model.set_env(self.env)
     
-    def inverse_fold(self, target, budget=20):
+    def inverse_fold(self, target, budget=50, permute=True, show=False):
         """
         Method for using the model to generate a nucleotide sequence
         solution given a target dot-bracket sequence
         """
+
+        if show:
+            driver = create_browser('double')
         self.model.set_env(self.test_env)
-        seq = Sequence(target, 0, 0)
+        seq = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
         data = Dataset(sequences=[seq])
         self.model.env.set_attr('dataset', data)
         n = self.model.env.get_attr('next_target')[0]
         n()
-        self.env.set_attr('meta_learning', False)
+        self.model.env.set_attr('meta_learning', False)
+        if permute: self.model.env.set_attr('permute', True)
+
+        target = self.model.env.get_attr('target')[0]
+        if show:
+            show_rna(target.seq, 'AUAUAU', driver, 0)
         
         self.test_state = self.model.env.reset()
         # Model
+        end = False
         for _ in range(budget):
             self.done = [False]
             while not self.done[0]:
                 action, _ = self.model.predict(self.test_state)
                 self.test_state, _, self.done, _ = self.model.env.step(action)
-                s = self.model.env.get_attr('prev_solution')[0]
+                solution = self.model.env.get_attr('prev_solution')[0]
                 if self.done[0]:
-                    s.summary(True)
+                    solution.summary(True)
+                    if show:
+                        show_rna(solution.folded_design.seq, solution.string, driver, 1)
+                if solution.hd <= 0: end = True
+                if end: break
+            if end: break
+        return solution
 
     def random_sampling(self, target, budget=100):
         """
@@ -482,11 +497,71 @@ class SBWrapper(object):
             self.done = [False]
             episode_buffer = []
             while not self.done[0]:
+                
                 action = [self.model.env.action_space.sample()]
                 self.test_state, _, self.done, _ = self.model.env.step(action)
-                s = self.model.env.get_attr('prev_solution')[0]
+                solution = self.model.env.get_attr('prev_solution')[0]
                 if self.done[0]:
-                    s.summary(True)
+                    solution.summary(True)
+
+    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
+        """
+        Run
+        """
+        # driver = webdriver.Chrome('/home/andrius/chromedriver')
+        if show:
+            driver = create_browser('double')
+        self.model.set_env(self.test_env)
+        n_seqs=29 if dataset=='rfam_taneda' else 100
+        if dataset=='rfam_learn_train':
+            n_seqs=5000
+        
+        d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
+        self.model.env.set_attr('dataset', d)
+        self.model.env.set_attr('randomize', False)
+        self.model.env.set_attr('meta_learning', False)
+        get_seq = self.model.env.get_attr('next_target')[0]
+        self.model.env.set_attr('current_sequence', 0)
+        self.model.env.set_attr('permute', permute)
+
+        self.test_state = self.model.env.reset()
+        solved = []
+        
+        for n, seq in enumerate(d.sequences):
+            print(n, '\n')
+            get_seq()
+            target = self.model.env.get_attr('target_structure')[0]
+            if show:
+                show_rna(target.seq, 'AUAUAU', driver, 0)
+                time.sleep(pause)
+            end = False
+            ep = 0
+            for b in range(budget):
+                self.done = [False]
+                while not self.done[0]:
+                    action, _ = self.model.predict(self.test_state)
+                    self.test_state, _, self.done, _ = self.model.env.step(action)
+                    solution = self.model.env.get_attr('prev_solution')[0]
+                    
+                    if self.done[0]:
+                        if show and ep%1==0:
+                            show_rna(solution.folded_design.seq, solution.string, driver, 1)
+                            
+                            time.sleep(pause)
+                        if solution.hd <= 0:
+                            solution.summary(True)
+                            solved.append([n, solution, b+1, budget])
+                            print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
+                            end = True
+                            ep += 1
+                            # if show:
+                            #     show_rna(solution.target.seq, solution.string, driver, 0, 'display')
+                if end: break
+        print('Solved ', len(solved), '/', len(d.sequences))
+
+        # self.write_test_results(solved, d)
+        
+        return solved
 
         
 if __name__ == "__main__":
@@ -542,21 +617,21 @@ if __name__ == "__main__":
     #             while not self.done[0]:
     #                 action, _ = self.model.predict(self.test_state)
     #                 self.test_state, _, self.done, _ = self.model.env.step(action)
-    #                 s = self.model.env.get_attr('prev_solution')[0]
+    #                 solution = self.model.env.get_attr('prev_solution')[0]
                     
     #                 if self.done[0]:
     #                     if show and ep%1==0:
-    #                         show_rna(s.folded_design.seq, s.string, driver, 1)
+    #                         show_rna(solution.folded_design.seq, solution.string, driver, 1)
                             
     #                         time.sleep(pause)
-    #                     if s.hd <= 0:
-    #                         s.summary(True)
-    #                         solved.append([n, s, b+1, budget])
+    #                     if solution.hd <= 0:
+    #                         solution.summary(True)
+    #                         solved.append([n, solution, b+1, budget])
     #                         print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
     #                         end = True
     #                         ep += 1
     #                         # if show:
-    #                         #     show_rna(s.target.seq, s.string, driver, 0, 'display')
+    #                         #     show_rna(solution.target.seq, solution.string, driver, 0, 'display')
     #             if end: break
     #     print('Solved ', len(solved), '/', len(d.sequences))
 
@@ -604,24 +679,24 @@ if __name__ == "__main__":
     #             while not self.done[0]:
     #                 action, _ = self.model.predict(self.test_state)
     #                 self.test_state, _, self.done, _ = self.model.env.step(action)
-    #                 s = self.model.env.get_attr('prev_solution')[0]
-    #                 num = s.target.file_nr - 1
+    #                 solution = self.model.env.get_attr('prev_solution')[0]
+    #                 num = solution.target.file_nr - 1
     #                 if self.done[0]:
-    #                     if s.hd < min_hd[num]: min_hd[num] = s.hd
+    #                     if solution.hd < min_hd[num]: min_hd[num] = solution.hd
     #                     attempts[num] += 1
     #                     if show and ep%1==0:
-    #                         show_rna(s.folded_design.seq, s.string, driver, 1)
+    #                         show_rna(solution.folded_design.seq, solution.string, driver, 1)
     #                         time.sleep(pause)
     #                     t_episode = time.time() - ep_start
-    #                     if s.hd <= 0:
+    #                     if solution.hd <= 0:
     #                         dataset = self.model.env.get_attr('dataset')[0]
-    #                         dataset.sequences.remove(s.target)
-    #                         s.summary(True)
+    #                         dataset.sequences.remove(solution.target)
+    #                         solution.summary(True)
     #                         ep += 1
     #                     t_total += t_episode
     #                     time_taken[num] += t_episode
-    #                     if s.hd <= 0:
-    #                         solved.append([num, s, attempts[num], min_hd[num], round(time_taken[num],2)])
+    #                     if solution.hd <= 0:
+    #                         solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2)])
     #                         print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
     #     except KeyboardInterrupt:
     #         pass
