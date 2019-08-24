@@ -61,7 +61,7 @@ class RnaGraphDesign(gym.Env):
                     n_seqs=self.config['seq_count'])
 
         
-        self.next_target()
+        self.next_target_structure()
         self.folded_design = ''
         self.good_solutions = []
         self.prev_solution = None
@@ -78,7 +78,7 @@ class RnaGraphDesign(gym.Env):
         self.observation_space = gym.spaces.Box(shape=(512,), low=-2., high=2.,dtype=np.float32)
         self.action_space = gym.spaces.Discrete(4)
         
-    def next_target(self):
+    def next_target_structure(self):
         """
         Get the next target_structure secondary structure in the dataset
         """
@@ -131,7 +131,7 @@ class RnaGraphDesign(gym.Env):
             .format(self.ep, self.target_structure.file_nr, self.target_structure.len, self.r, self.solution.hd, self.lhd), end='\r')
         
         if self.meta_learning:
-            self.next_target()
+            self.next_target_structure()
         else:
             self.solution = GraphSolution(self.target_structure, self.config)
         self.state = self.solution.get_features()
@@ -164,7 +164,7 @@ class RnaGraphDesign(gym.Env):
                 print(self.solution.string, end='\r\r\r') #' ', self.target_structure.seq, '\n ',
                 # time.sleep(0.05)
                 input()
-            self.next_target()
+            self.next_target_structure()
         self.reset()
     
     def parse_data(self):
@@ -179,7 +179,7 @@ class RnaGraphDesign(gym.Env):
                 print(self.target_structure.seq)
                 print('Bad: {}'.format(self.solution.index))
                 # del self.dataset.sequences[self.solution.index - 1]
-            self.next_target()
+            self.next_target_structure()
 
     def random_sampling_test(self,runs=1000):
         for _ in range(runs):

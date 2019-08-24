@@ -55,6 +55,7 @@ class RnaDesign(gym.Env):
         self.current_sequence = 0
         self.next_target_structure()
         self.prev_solution = None
+        self.permute = self.config['permute']
 
         # Parameters
         self.use_full_state = self.config['full_state']
@@ -98,13 +99,16 @@ class RnaDesign(gym.Env):
         if solution.index == self.target_structure.len - 1:
             solution.r, _ = self.solution.evaluate(
                 string=solution.string, 
-                permute=self.config['permute'])
+                permute=self.permute)
 
             self.r = solution.r
             self.done = True
         else:
             self.r += self.shape_reward()
             solution.find_next_unfilled()
+
+        if self.r == 1:
+            self.r += .5
 
         return solution.get_state(), self.r, self.done, {}
 
@@ -147,17 +151,17 @@ class RnaDesign(gym.Env):
 
         if self.target_structure.markers[index] == 'I':
             if self.target_structure.markers[index-1] != 'I' and string[index] == 'G':
-                reward += 0.01
+                reward += 0.005
             if self.target_structure.markers[index+1] != 'I' and string[index] == 'A':
-                reward += 0.02
+                reward += 0.005
 
         if self.target_structure.markers[index] == 'S':
             if self.target_structure.markers[index-1] != 'S' or self.target_structure.markers[index+1] != 'S':
                 if string[index] == 'G' or string[index] == 'C':
-                    reward += 0.01
+                    reward += 0.005
             else:
                 if string[index] == 'A' or string[index] == 'U':
-                    reward += 0.01
+                    reward += 0.002
 
         # if self.target_structure.markers[index] == 'M':
         #     if self.target_structure[index-1] != 'I' and string[index] == 'A':
@@ -168,10 +172,9 @@ class RnaDesign(gym.Env):
 
         if self.target_structure.markers[index] == 'H':
             if self.target_structure.markers[index-1] != 'H' and string[index] == 'G':
-                reward += 0.01
+                reward += 0.005
             if self.target_structure.markers[index+1] != 'H' and string[index] == 'A':
-                reward += 0.01
-        # print('                                                                                       {}'.format(reward), end='\r')
+                reward += 0.005
         return reward
 
     ################

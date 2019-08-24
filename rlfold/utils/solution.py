@@ -23,7 +23,7 @@ class Solution(object):
         self.target = target
         self.mapping         = {0:'A', 1:'C', 2:'G', 3:'U'}
         self.reverse_mapping = {'A':0, 'C':1, 'G':2, 'U':3}
-        self.reverse_action  = {0:3, 1:2, 2:1, 3:1}
+        self.reverse_action  = {0:3, 1:2, 2:1, 3:0}
         
         self.str = None
         self.use_full_state = self.config['full_state']
@@ -175,9 +175,9 @@ class Solution(object):
             self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
         reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
-        gcau = self.gcau_content()
-        if gcau['U'] < 0.12:
-            reward = reward/2 + reward/2 * (0.12 - gcau['U'])
+        # gcau = self.gcau_content()
+        # if gcau['U'] < 0.12:
+        #     reward = reward/2 + reward/2 * (0.12 - gcau['U'])
         if verbose:
             print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))

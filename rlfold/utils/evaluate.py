@@ -64,7 +64,7 @@ class Tester(object):
         model.env.set_attr('current_sequence', 0)
         model.env.set_attr('permute', permute)
         data = model.env.get_attr('dataset')[0]
-        get_next_target = model.env.get_attr('next_target')[0]
+        get_next_target = model.env.get_attr('next_target_structure')[0]
 
         if show:
             driver = create_browser('double')
