@@ -1,14 +1,20 @@
 import numpy as np
 import copy, random, os, datetime
-from rlfold.utils import Sequence, hamming_distance
-from rlfold.utils import colorize_nucleotides, highlight_mismatches
+from rlfold.definitions import Sequence, hamming_distance
+from rlfold.definitions import colorize_nucleotides, highlight_mismatches
 from rlfold.interface import create_browser, show_rna
 import rlfold.settings as settings
 import networkx as nx
 
+
 if settings.os == 'linux':
     import RNA
+    RNA.cvar.dangles = 3
+    RNA.cvar.noGU = 1
+    # RNA.cvar.betaScale = 1.5
+
     fold_fn = RNA.fold
+    
 elif settings.os == 'win32':
     from .vienna import fold
     fold_fn = fold
@@ -163,66 +169,89 @@ class Solution(object):
 
         if string is None: string = self.string
         self.folded_design, self.fe = fold_fn(string)
-        self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
-        if self.config['detailed_comparison']:
-            self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
-        else:
-            self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
+        # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
+        # if self.config['detailed_comparison']:
+        #     self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
+        # else:
+        self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
 
-        if permute and self.hd <= 5 and self.hd > 0:
-            self.str, self.hd = self.local_improvement(mismatch_indices)
+        # Permutations
+        if permute and 0 < self.hd <= self.config['permutation_threshold']:
+            self.str, self.hd = self.local_improvement(mismatch_indices, budget=self.config['permutation_budget'])
             self.folded_design, self.fe = fold_fn(self.string)
-            self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
+            # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
         reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
-        # gcau = self.gcau_content()
-        # if gcau['U'] < 0.12:
-        #     reward = reward/2 + reward/2 * (0.12 - gcau['U'])
+        gcau = self.gcau_content()
+        if gcau['U'] < 0.12:
+            reward = reward/2 + reward/2 * (0.12 - gcau['U'])
         if verbose:
-            print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
+            print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))
         self.reward = reward
-        return reward, self.hd
-    
-    def local_improvement(self, mismatch_indices, budget=20, surroundings=True):
+        return reward, self.hd, mismatch_indices
+
+    def local_improvement(self, original_mismatch_indices, budget=20):
         """
         Performs a local improvement on the mismatch sites 
         """
         # reward = self.reward
         step = 0
+        hd = self.hd
+        if self.config['permutation_budget'] == 0:
+            budget = len(original_mismatch_indices) * 2
+        else:
+            budget = self.config['permutation_budget']
 
-        if surroundings:
+        window = range(1, self.config['permutation_radius']+1)
+        def get_surrounding(mismatches):
             all_indices = []
-            window = [1]
-            for index in mismatch_indices:
+            for index in mismatches:
                 for i in window:
                     if index - i >= 0:
                         all_indices.append(index-i)
                     if index + i <= self.target.len -1:
                         all_indices.append(index+i)
-            mismatch_indices = list(mismatch_indices)
-            mismatch_indices += all_indices
-        else:
-            all_indices = mismatch_indices
+            mismatches = list(mismatches)
+            mismatches += all_indices
+            return set(all_indices)
+
+        original_mismatch_indices = get_surrounding(original_mismatch_indices)
+
+        best_permutation, best_mismatch_indices = None, None
         min_hd = 100
         while self.hd != 0 and step < budget:
             print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
-            permutation = copy.deepcopy(self.str)
+                    # if surroundings:
+
             
-            for mismatch in all_indices:
+            if min_hd > self.hd:
+                permutation = copy.deepcopy(self.str)
+                mismatch_indices = original_mismatch_indices
+            else:
+                permutation = copy.deepcopy(best_permutation)
+                mismatch_indices = best_mismatch_indices
+
+            
+
+            for mismatch in mismatch_indices:
                 pair = None
+                # In case of a stem find the paired nucleotide
                 for key, item in self.target.paired_sites.items():
                     if key  == mismatch: pair = item
                     if item == mismatch: pair = key
-
-                action = random.randint(0, 3)
-                permutation[mismatch] = self.mapping[action]
-                if pair is not None:
-                    permutation[pair] = self.mapping[self.reverse_action[action]]
+                if random.random() > self.config['mutation_probability']:
+                    action = random.randint(0, 3)
+                    permutation[mismatch] = self.mapping[action]
+                    if pair is not None:
+                        permutation[pair] = self.mapping[self.reverse_action[action]]
 
             string = ''.join(permutation)
-            _, hd = self.evaluate(string, permute=False)
-            if hd < min_hd: min_hd = hd
+            _, hd, mismatch_indices = self.evaluate(string, permute=False)
+            if hd < min_hd: 
+                min_hd = hd
+                best_mismatch_indices = get_surrounding(mismatch_indices)
+                best_permutation = copy.deepcopy(permutation)
 
             step += 1
             # mm1, mm2 = highlight_mismatches(string, self.string)
@@ -231,7 +260,7 @@ class Solution(object):
             # input()
         if hd == 0:
             print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
-        return permutation, min_hd
+        return best_permutation, min_hd
 
     def variance_reward(self):
         """
@@ -260,21 +289,17 @@ class Solution(object):
                   self.target.file_nr, self.target.len, self.target.db_ratio, self.hd, self.reward)
         header += '  ||   G:{:.2f} | C:{:.2f} | A:{:.2f} | U:{:.2f} |'.format(gcau['G'], gcau['C'], gcau['A'], gcau['U'])
         solution = 'S:  ' + self.string
-        folded   = 'F:  ' + self.folded_design.seq
+        folded   = 'F:  ' + self.folded_design
         target   = 'T:  ' + self.target.seq
-        detail1  = 'D1: ' + self.folded_design.markers
         detail2  = 'D2; ' + self.target.markers
         free_en  = 'FE: {:.3f}'.format(self.fe)
-        summary = [header, solution, folded, target, detail1, detail2, free_en]
+        summary = [header, solution, folded, target, detail2, free_en]
         if colorize:
             colored  = 'S:  ' + colorize_nucleotides(self.string)
-            mm1, mm2 = highlight_mismatches(self.folded_design.seq, self.target.seq)
-            mm3, mm4 = highlight_mismatches(self.folded_design.markers, self.target.markers)
+            mm1, mm2 = highlight_mismatches(self.folded_design, self.target.seq)
             hl1 = 'F:  ' + mm2
             hl2 = 'T:  ' + mm1
-            hl3 = 'D1: ' + mm4
-            hl4 = 'D2: ' + mm3
-            console_output = [header, colored, hl1, hl2, hl3, hl4, free_en]
+            console_output = [header, colored, hl1, hl2, free_en]
         else: 
             console_output = summary
         if print_output:
@@ -304,7 +329,7 @@ class Solution(object):
         """
         driver = create_browser('display')
         
-        show_rna(self.folded_design.seq, self.string, driver=driver, html='display')
+        show_rna(self.folded_design, self.string, driver=driver, html='display')
         print(self.summary())
         # print(self.target.seq)
         # print(seq.markers)

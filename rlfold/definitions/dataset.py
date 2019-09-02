@@ -1,8 +1,8 @@
 import numpy as np
 import os, random, yaml, time
 import matplotlib.pyplot as plt
-from rlfold.utils import load_length_metadata, load_sequence
-from rlfold.utils import Sequence
+from rlfold.definitions import load_length_metadata, load_sequence
+from rlfold.definitions import Sequence
 import rlfold.settings as settings
 from rlfold.interface import show_rna, create_browser
 
@@ -61,7 +61,6 @@ class Dataset(object):
         for seq in self.sequences:
             show_rna(seq.seq, None, driver=driver, html='dataset')
             print(seq.summary())
-            print(len(seq.primary), len(seq.secondary), seq.len)
             if not auto: input()
             else: time.sleep(2)
 
@@ -100,3 +99,27 @@ class Dataset(object):
             with open(filename, 'w') as f:
                 yaml.dump(lengths[length], f)
         return lengths
+
+    def create_subgraph_dataset(self, name):
+        """
+        Creates a new dataset out of all combinations of subraphs existing
+        in the dataset
+        """
+        directory = os.path.join(settings.DATA, name)
+        os.makedirs(directory)
+
+        for sequence in self.sequences:
+            element = sequence.graph.get_elem(1)
+            subgraph = sequence.get_subgraph(1)
+            for i in range(1, len(sequence)):
+                current_element = sequence.graph.get_elem(i)
+
+                if current_element != element:
+                    current_subgraph = sequence.get_subgraph(i)
+                    element = current_element
+
+                sequence.get_subgraph()
+
+
+
+

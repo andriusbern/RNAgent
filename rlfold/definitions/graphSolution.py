@@ -2,8 +2,8 @@ import numpy as np
 import networkx as nx
 import random, datetime, os, copy
 
-from rlfold.utils import Sequence
-from rlfold.utils import hamming_distance, highlight_mismatches, colorize_nucleotides
+from rlfold.definitions import Sequence
+from rlfold.definitions import hamming_distance, highlight_mismatches, colorize_nucleotides
 import rlfold.settings as settings
 
 if settings.os == 'linux':
@@ -139,23 +139,23 @@ class GraphSolution(object):
 
         if string is None: string = self.string
         self.folded_design, self.fe = fold_fn(string)
-        self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
-        if self.config['detailed_comparison']:
-            self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
-        else:
-            self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design.seq)
+        # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
+        # if self.config['detailed_comparison']:
+        #     self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
+        # else:
+        self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
 
         if permute and self.hd <= 5 and self.hd > 0:
             self.nucleotide_list, self.hd = self.local_improvement(mismatch_indices)
             self.folded_design, self.fe = fold_fn(self.string)
-            self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
+            # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
         reward = (1 - float(self.hd)/float(self.target.len)) ** self.config['reward_exp']
         # gcau = self.gcau_content()
         # if gcau['U'] < 0.12:
         #     reward = reward/2 + reward/2 * (0.12 - gcau['U'])
         if verbose:
-            print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design.seq, self.target.seq))
+            print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design, self.target.seq))
             print('\nHamming distance: {}\n'.format(reward))
         self.reward = reward
         return reward, self.hd
@@ -221,21 +221,18 @@ class GraphSolution(object):
                     self.target.file_nr, self.target.len, self.target.db_ratio, self.hd, self.reward)
             header += '  ||   G:{:.2f} | C:{:.2f} | A:{:.2f} | U:{:.2f} |'.format(gcau['G'], gcau['C'], gcau['A'], gcau['U'])
             solution = 'S:  ' + self.string
-            folded   = 'F:  ' + self.folded_design.seq
+            folded   = 'F:  ' + self.folded_design
             target   = 'T:  ' + self.target.seq
-            detail1  = 'D1: ' + self.folded_design.markers
             detail2  = 'D2; ' + self.target.markers
             free_en  = 'FE: {:.3f}'.format(self.fe)
-            summary = [header, solution, folded, target, detail1, detail2, free_en]
+            summary = [header, solution, folded, target, detail2, free_en]
             if colorize:
                 colored  = 'S:  ' + colorize_nucleotides(self.string)
-                mm1, mm2 = highlight_mismatches(self.folded_design.seq, self.target.seq)
-                mm3, mm4 = highlight_mismatches(self.folded_design.markers, self.target.markers)
+                mm1, mm2 = highlight_mismatches(self.folded_design, self.target.seq)
+                # mm3, mm4 = highlight_mismatches(self.target.markers, self.target.markers)
                 hl1 = 'F:  ' + mm2
                 hl2 = 'T:  ' + mm1
-                hl3 = 'D1: ' + mm4
-                hl4 = 'D2: ' + mm3
-                console_output = [header, colored, hl1, hl2, hl3, hl4, free_en]
+                console_output = [header, colored, hl1, hl4, free_en]
             else: 
                 console_output = summary
             if print_output:

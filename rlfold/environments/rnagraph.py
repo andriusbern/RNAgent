@@ -1,13 +1,13 @@
 import sys
 # sys.path.append('/usr/local/lib/python3.6/site-packages')
 import numpy as np
-from rlfold.utils import Dataset, GraphSolution, Sequence
+from rlfold.definitions import Dataset, GraphSolution, Sequence
 import gym, time, os, random
 import cv2
 import rlfold.settings as settings
-from rlfold.utils import colorize_nucleotides
+from rlfold.definitions import colorize_nucleotides
 from gensim.models.doc2vec import Doc2Vec
-from rlfold.utils import WeisfeilerLehmanMachine
+from rlfold.definitions import WeisfeilerLehmanMachine
 
 import networkx as nx
 import matplotlib.pyplot as plt

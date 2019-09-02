@@ -11,7 +11,7 @@ class Sequence(object):
     def __init__(self, sequence, file_id=None, file_nr=None, encoding_type=0, graph_based=False):
         self.seq = sequence
         self.len = len(sequence)
-        self.bin = self.to_binary()
+        # self.bin = self.to_binary()
         self.db_ratio = float(sum([1 if x == '.' else 0 for x in self.seq])) / self.len
         self.loops = self._count_loops()
         self.n_loops = len(self.loops)
@@ -23,7 +23,7 @@ class Sequence(object):
         self.file_nr = file_nr
 
         # if graph_based:
-        self.graph = forgi.graph.bulge_graph.BulgeGraph.from_dotbracket(self.seq, dissolve_length_one_stems=False)
+        # self.graph = forgi.graph.bulge_graph.BulgeGraph.from_dotbracket(self.seq, dissolve_length_one_stems=False)
             # self.element_dict = self.get_graph()
             # self.primary, self.secondary, self.graph_markers = self.create_strands(self.element_dict)
             # self.graph_based_encoding = self.get_graph_based_encoding()

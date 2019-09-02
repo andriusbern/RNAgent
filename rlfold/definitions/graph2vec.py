@@ -112,7 +112,7 @@ def exctract_features(graph, features, rounds):
 
 def train(args):
     from rlfold.environments import RnaGraphDesign
-    from rlfold.utils import Dataset
+    from rlfold.definitions import Dataset
     from rlfold.baselines import get_parameters
     # Get graphs and features from the environment
 
@@ -223,7 +223,7 @@ def main(args):
 def test(args):
     model = Doc2Vec.load('train500_4each512')
     from rlfold.environments import RnaGraphDesign
-    from rlfold.utils import Dataset
+    from rlfold.definitions import Dataset
     from rlfold.baselines import get_parameters
     # Get graphs and features from the environment
 

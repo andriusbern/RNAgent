@@ -1,11 +1,11 @@
 import sys
 # sys.path.append('/usr/local/lib/python3.6/site-packages')
 import numpy as np
-from rlfold.utils import Dataset, Solution, Sequence#, Tester
+from rlfold.definitions import Dataset, Solution, Sequence#, Tester
 import gym, time, os, random
 import cv2
 import rlfold.settings as settings
-from rlfold.utils import colorize_nucleotides
+from rlfold.definitions import colorize_nucleotides
 from rlfold.interface import create_browser, show_rna
 
 """
@@ -21,6 +21,7 @@ class RnaDesign(gym.Env):
         self.config = config['environment']
         self.env_id = rank
         self.meta_learning = self.config['meta_learning']
+
 
         # Logging
         if 'path' not in self.config.keys():
@@ -97,14 +98,16 @@ class RnaDesign(gym.Env):
         solution.matrix_action(action)
 
         if solution.index == self.target_structure.len - 1:
-            solution.r, _ = self.solution.evaluate(
+            solution.r, _, _ = self.solution.evaluate(
                 string=solution.string, 
                 permute=self.permute)
 
             self.r = solution.r
             self.done = True
         else:
-            self.r += self.shape_reward()
+            shaped = self.shape_reward()
+            # self.r += self.shape_reward()
+            # print(shaped)
             solution.find_next_unfilled()
 
         if self.r == 1:
@@ -125,14 +128,16 @@ class RnaDesign(gym.Env):
             self.solution.write_solution()
 
         # if self.config['verbose']:
-        print('Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
-            self.ep,
-            self.target_structure.file_nr, 
-            self.target_structure.len, 
-            self.r, 
-            self.solution.hd, 
-            self.lhd), 
-            end='\r')
+        summary = '                                    '
+        summary += 'Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
+                    self.ep,
+                    self.target_structure.file_nr, 
+                    self.target_structure.len, 
+                    self.r, 
+                    self.solution.hd, 
+                    self.lhd)
+                    
+        print(summary, end='\r')
 
         if self.meta_learning:
             self.next_target_structure()
@@ -151,17 +156,17 @@ class RnaDesign(gym.Env):
 
         if self.target_structure.markers[index] == 'I':
             if self.target_structure.markers[index-1] != 'I' and string[index] == 'G':
-                reward += 0.005
+                reward += 0.001
             if self.target_structure.markers[index+1] != 'I' and string[index] == 'A':
-                reward += 0.005
+                reward += 0.001
 
         if self.target_structure.markers[index] == 'S':
             if self.target_structure.markers[index-1] != 'S' or self.target_structure.markers[index+1] != 'S':
                 if string[index] == 'G' or string[index] == 'C':
-                    reward += 0.005
+                    reward += 0.001
             else:
                 if string[index] == 'A' or string[index] == 'U':
-                    reward += 0.002
+                    reward += 0.001
 
         # if self.target_structure.markers[index] == 'M':
         #     if self.target_structure[index-1] != 'I' and string[index] == 'A':
@@ -172,9 +177,9 @@ class RnaDesign(gym.Env):
 
         if self.target_structure.markers[index] == 'H':
             if self.target_structure.markers[index-1] != 'H' and string[index] == 'G':
-                reward += 0.005
+                reward += 0.001
             if self.target_structure.markers[index+1] != 'H' and string[index] == 'A':
-                reward += 0.005
+                reward += 0.001
         return reward
 
     ################
@@ -205,11 +210,11 @@ class RnaDesign(gym.Env):
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(name, 1000, 200)
 
-        driver = create_browser('double')
+        # driver = create_browser('double')
 
         for _ in range(20):
             self.reset()
-            show_rna(self.target_structure.seq, None, driver, 0, 'double')
+            # show_rna(self.target_structure.seq, None, driver, 0, 'double')
             print(self.target_structure.markers)
             print(self.target_structure.seq)
             while not self.done:
@@ -227,7 +232,7 @@ class RnaDesign(gym.Env):
             print(''.join([' '] * 500))
             self.solution.summary(True)
             print('\n')
-            show_rna(self.solution.folded_design.seq, self.solution.string, driver, 1, 'double')
+            # show_rna(self.solution.folded_design.seq, self.solution.string, driver, 1, 'double')
             if pause: input()
         cv2.destroyWindow(name)
 
@@ -246,4 +251,4 @@ if __name__ == "__main__":
     from rlfold.baselines import SBWrapper, get_parameters
     env = RnaDesign(get_parameters('RnaDesign'))
     # env.speed_test()
-    env.visual_test()
+    env.visual_test(True)

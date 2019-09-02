@@ -1,28 +1,29 @@
 main:
     model: PPO2
-    policy: CustomMlpPolicy
-    n_workers: 2
-    n_steps: 30000
+    policy: CustomCnnLnLstmPolicy
+    n_workers: 4
+    n_steps: 80000000
     multi_discrete: false
     frame_stack: 0
     seed: 1
 models:
     PPO2:
         gamma: 1
-        n_steps: 512
-        ent_coef: 0.002
-        learning_rate: 0.9e-04
+        n_steps: 128
+        ent_coef: 0.001
+        learning_rate: 0.9e-05
         vf_coef: 0.5
         max_grad_norm: 0.5
-        lam: 0.95
-        nminibatches: 8
-        noptepochs: 3
-        cliprange: 0.1
+        lam: 0.98
+        nminibatches: 4
+        noptepochs: 4
+        cliprange: 0.15
         full_tensorboard_log: false
         verbose: 0
     
 policies:
     CnnPolicy: {}
+    CnnLnLstmPolicy: {}
     CustomCnnPolicy: 
         filters:
         - 512
@@ -52,6 +53,35 @@ policies:
         conv_init_scale: 1.4
         kernel_initializer: glorot_normal_initializer
         init_bias: 0.5
+    CustomCnnLnLstmPolicy: 
+        filters:
+        - 32
+        - 128
+        - 16
+        kernel_size:
+        - - 10
+          - 1
+        - - 1
+          - 10
+        - - 1
+          - 5
+        stride:
+        - 1
+        - 1
+        - 1
+        lstm: 
+        shared:
+        - lstm
+        - 128
+        h_actor:
+        - 64
+        h_critic:
+        - 16
+        activ: relu
+        pd_init_scale: 0.05
+        conv_init_scale: 1.4
+        kernel_initializer: glorot_normal_initializer
+        init_bias: 0.5
     CustomCnnLstmPolicy: {}
     MlpPolicy: {}
 
@@ -61,25 +91,33 @@ environment:
     use_nucleotides: true 
     use_padding: true
     full_state: true
-    kernel_size: 35
+    kernel_size: 45
+
+    # Permutations
+    permute: false
+    permutation_budget: 50
+    permutation_radius: 1
+    permutation_threshold: 5
+    allow_gu_permutations: false
+    mutation_probability: 0.5
+
 
     # Reward
     detailed_comparison: true
     reward_exp: 9
     write_threshold: 0
-    permute: false
 
     # Data
     meta_learning: true
-    seq_count: 10
+    seq_count: 1
     randomize: true
     exact_seq_length: true
     test_set: false
     seq_len:
       - 55
-      - 80
+      - 60
 
 testing:
-    evaluate_every: 1000
+    evaluate_every: 5000
     test_timeout: 5
 

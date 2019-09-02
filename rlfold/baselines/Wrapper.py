@@ -11,7 +11,7 @@ import cv2
 from rlfold.interface import show_rna, create_browser
 import rlfold.environments
 # Local
-from rlfold.utils import Sequence, Dataset, Tester
+from rlfold.definitions import Sequence, Dataset, Tester
 import rlfold.settings as settings
 
 import tensorflow as tf
@@ -280,7 +280,7 @@ class SBWrapper(object):
         self.env = create_env(self.env_name, self.config)
         testconf = copy.deepcopy(self.config)
         testconf['environment']['meta_learning'] = False
-        testconf['main']['n_workers'] = 1
+        # testconf['main']['n_workers'] = 1
         # if self._env_type is not 'vrep' or self._env_type is not 'rna':
         self.test_env = create_env(self.env_name, testconf, 1)
 
@@ -453,7 +453,7 @@ class SBWrapper(object):
         seq = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
         data = Dataset(sequences=[seq])
         self.model.env.set_attr('dataset', data)
-        n = self.model.env.get_attr('next_target')[0]
+        n = self.model.env.get_attr('next_target_structure')[0]
         n()
         self.model.env.set_attr('meta_learning', False)
         if permute: self.model.env.set_attr('permute', True)
@@ -474,7 +474,7 @@ class SBWrapper(object):
                 if self.done[0]:
                     solution.summary(True)
                     if show:
-                        show_rna(solution.folded_design.seq, solution.string, driver, 1)
+                        show_rna(solution.folded_design, solution.string, driver, 1)
                 if solution.hd <= 0: end = True
                 if end: break
             if end: break
@@ -504,11 +504,10 @@ class SBWrapper(object):
                 if self.done[0]:
                     solution.summary(True)
 
-    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
+    def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0, wait=False):
         """
         Run
         """
-        # driver = webdriver.Chrome('/home/andrius/chromedriver')
         if show:
             driver = create_browser('double')
         self.model.set_env(self.test_env)
@@ -520,7 +519,7 @@ class SBWrapper(object):
         self.model.env.set_attr('dataset', d)
         self.model.env.set_attr('randomize', False)
         self.model.env.set_attr('meta_learning', False)
-        get_seq = self.model.env.get_attr('next_target')[0]
+        get_seq = self.model.env.get_attr('next_target_structure')[0]
         self.model.env.set_attr('current_sequence', 0)
         self.model.env.set_attr('permute', permute)
 
@@ -545,7 +544,7 @@ class SBWrapper(object):
                     
                     if self.done[0]:
                         if show and ep%1==0:
-                            show_rna(solution.folded_design.seq, solution.string, driver, 1)
+                            show_rna(solution.folded_design, solution.string, driver, 1)
                             
                             time.sleep(pause)
                         if solution.hd <= 0:
@@ -556,6 +555,7 @@ class SBWrapper(object):
                             ep += 1
                             # if show:
                             #     show_rna(solution.target.seq, solution.string, driver, 0, 'display')
+                        if wait: input()
                 if end: break
         print('Solved ', len(solved), '/', len(d.sequences))
 
@@ -566,10 +566,10 @@ class SBWrapper(object):
         
 if __name__ == "__main__":
     # import matplotlib.pyplot as plt
-    env = 'MountainCarContinuous-v0'
-    b = SBWrapper(env)
-    b.create_model()
-    b.run()
+    # env = 'MountainCarContinuous-v0'
+    b = SBWrapper('RnaDesign').create_model()
+    # b.create_model()
+    b.visual_test()
 
 
 

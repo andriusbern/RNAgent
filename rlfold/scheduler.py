@@ -1,4 +1,4 @@
-from rlfold.utils import Dataset
+from rlfold.definitions import Dataset
 from rlfold.baselines import SBWrapper, get_parameters
 import rlfold.environments
 import os, sys, argparse, time

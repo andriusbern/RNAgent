@@ -54,12 +54,12 @@ def show_rna(dotbr, seq=None, driver=None, num=0, html='double'):
     html = modify_html(dotbr, seq, num, html)
     driver.refresh()
 
-def create_browser(html, browser='Firefox'):
+def create_browser(html, browser='Chrome'):
     """
     Opens a browser window and loads a html from ../rlfold/interface/fornac/dist/*
     """
     if browser == 'Chrome':
-        driver = webdriver.Chrome('/home/andrius/chromedriver')
+        driver = webdriver.Chrome()
     if browser == 'Firefox':
         driver = webdriver.Firefox()
     
