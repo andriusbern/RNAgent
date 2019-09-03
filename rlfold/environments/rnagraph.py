@@ -7,7 +7,7 @@ import cv2
 import rlfold.settings as settings
 from rlfold.definitions import colorize_nucleotides
 from gensim.models.doc2vec import Doc2Vec
-from rlfold.definitions import WeisfeilerLehmanMachine
+from rlfold.utils import WeisfeilerLehmanMachine
 
 import networkx as nx
 import matplotlib.pyplot as plt

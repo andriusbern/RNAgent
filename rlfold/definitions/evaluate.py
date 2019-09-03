@@ -75,8 +75,10 @@ class Tester(object):
         attempts = np.zeros([n_seqs], dtype=np.uint8)
         min_hd   = np.ones([n_seqs],  dtype=np.uint8) * 500
         t_per_sequence = np.zeros([n_seqs])
+
         for next_target in get_next_target:
             next_target()
+        model.env.reset()
         
         # get_next_target()
         try:
@@ -213,11 +215,6 @@ class Tester(object):
                 f.write(header)
         with open(path, 'a') as f:
             f.write(data_entry)
-
-    def save(self):
-        """
-        Saves the current model
-        """
 
     def write_test_summary(self):
         """
