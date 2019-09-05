@@ -70,6 +70,7 @@ class Tester(object):
         if show:
             driver = create_browser('double')
 
+
         solved  = []
         t_total = 0
         attempts = np.zeros([n_seqs], dtype=np.uint8)
@@ -100,7 +101,7 @@ class Tester(object):
                     action, _ = model.predict(test_state)
                     test_state, _, done, _ = model.env.step(action)
                     print(done)
-                    solution = model.env.get_attr('prev_solution')[0]
+                    solution = model.env.get_attr('prev_solution')
                     target_id = solution.target.file_nr - 1
 
                     # if done[0]:
