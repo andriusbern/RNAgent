@@ -10,9 +10,10 @@ import networkx as nx
 if settings.os == 'linux':
     import RNA
     RNA.cvar.dangles = 3
-    RNA.cvar.noGU = 1
+    RNA.cvar.noGU = 0
+    # RNA.cvar.no_closingGU = 1
     # RNA.cvar.betaScale = 1.5
-
+    # RNA.cvar.temperature = 40.0
     fold_fn = RNA.fold
     
 elif settings.os == 'win32':
@@ -169,15 +170,11 @@ class Solution(object):
 
         if string is None: string = self.string
         self.folded_design, self.fe = fold_fn(string)
-        # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
-        # if self.config['detailed_comparison']:
-        #     self.hd, mismatch_indices = hamming_distance(self.target.markers, self.folded_design.markers)
-        # else:
         self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
 
         # Permutations
         if permute and 0 < self.hd <= self.config['permutation_threshold']:
-            self.str, self.hd = self.local_improvement(mismatch_indices, budget=self.config['permutation_budget'])
+            self.str, self.hd = self.local_improvement(mismatch_indices, budget=self.config['permutation_budget'], verbose=verbose)
             self.folded_design, self.fe = fold_fn(self.string)
             # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
@@ -185,17 +182,15 @@ class Solution(object):
         gcau = self.gcau_content()
         if gcau['U'] < 0.12:
             reward = reward/2 + reward/2 * (0.12 - gcau['U'])
-        if verbose:
-            print('\nFolded sequence : \n {} \n Target: \n   {}'.format(self.folded_design, self.target.seq))
-            print('\nHamming distance: {}\n'.format(reward))
+
         self.reward = reward
         return reward, self.hd, mismatch_indices
 
-    def local_improvement(self, original_mismatch_indices, budget=20):
+    def local_improvement(self, original_mismatch_indices, budget=20, verbose=True):
         """
         Performs a local improvement on the mismatch sites 
         """
-        # reward = self.reward
+ 
         step = 0
         hd = self.hd
         if self.config['permutation_budget'] == 0:
@@ -219,11 +214,10 @@ class Solution(object):
         original_mismatch_indices = get_surrounding(original_mismatch_indices)
 
         best_permutation, best_mismatch_indices = None, None
-        min_hd = 100
+        min_hd = 500
         while self.hd != 0 and step < budget:
-            print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
-                    # if surroundings:
-
+            if verbose:
+                print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
             
             if min_hd > self.hd:
                 permutation = copy.deepcopy(self.str)
@@ -231,20 +225,32 @@ class Solution(object):
             else:
                 permutation = copy.deepcopy(best_permutation)
                 mismatch_indices = best_mismatch_indices
+            try:
+                for mismatch in mismatch_indices:
+                    if self.config['allow_gu_permutations']:
+                        symbol = self.target.seq[mismatch]
+                        if symbol == '.':
+                            action = random.randint(0, 3)
+                            mapping = {0:'A', 1:'C', 2:'G', 3:'U'}
 
-            
+                        elif symbol == '(' or symbol == ')':
+                            action = random.randint(0, 5)
+                            mapping = {0:'AU', 1:'UA', 2:'GC', 3:'CG', 4:'GU', 5:'UG'}
+                    else:
+                        mapping = {0:'AU', 1:'UA', 2:'GC', 3:'CG'}
+                        action = random.randint(0,3)
 
-            for mismatch in mismatch_indices:
-                pair = None
-                # In case of a stem find the paired nucleotide
-                for key, item in self.target.paired_sites.items():
-                    if key  == mismatch: pair = item
-                    if item == mismatch: pair = key
-                if random.random() > self.config['mutation_probability']:
-                    action = random.randint(0, 3)
-                    permutation[mismatch] = self.mapping[action]
-                    if pair is not None:
-                        permutation[pair] = self.mapping[self.reverse_action[action]]
+                    pair = None
+                    # In case of a stem find the paired nucleotide
+                    for key, item in self.target.paired_sites.items():
+                        if key  == mismatch: pair = item
+                        if item == mismatch: pair = key
+                    if random.random() > self.config['mutation_probability']:
+                        permutation[mismatch] = mapping[action][0]
+                        if pair is not None:
+                            permutation[pair] = mapping[action][1]
+            except:
+                pass
 
             string = ''.join(permutation)
             _, hd, mismatch_indices = self.evaluate(string, permute=False)
@@ -258,7 +264,7 @@ class Solution(object):
             # print(mm1)
             # print(mm2)
             # input()
-        if hd == 0:
+        if hd == 0 and verbose:
             print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
         return best_permutation, min_hd
 
@@ -274,7 +280,10 @@ class Solution(object):
         gcau = dict(G=0, C=0, A=0, U=0)
         increment = 1. / len(self.str)
         for nucleotide in self.str:
-            gcau[nucleotide] += increment
+            try:
+                gcau[nucleotide] += increment
+            except:
+                pass
 
         return gcau
 

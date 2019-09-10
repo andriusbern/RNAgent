@@ -68,6 +68,7 @@ class RnaDesign(gym.Env):
         self.r   = 0
         self.lhd = 500
         self.done = False
+        self.verbose = True
         state_size = np.shape(self.solution.get_state())
 
         if self.use_full_state:
@@ -100,7 +101,8 @@ class RnaDesign(gym.Env):
         if solution.index == self.target_structure.len - 1:
             solution.r, _, _ = self.solution.evaluate(
                 string=solution.string, 
-                permute=self.permute)
+                permute=self.permute,
+                verbose=False)
 
             self.r = solution.r
             self.done = True
@@ -124,20 +126,20 @@ class RnaDesign(gym.Env):
         self.done = False
 
         if self.solution.hd < self.lhd: self.lhd = self.solution.hd
-        if self.solution.hd <= self.config['write_threshold']:
-            self.solution.write_solution()
+        # if self.solution.hd <= self.config['write_threshold']:
+        #     self.solution.write_solution()
 
-        # if self.config['verbose']:
-        summary = '                                    '
-        summary += 'Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
-                    self.ep,
-                    self.target_structure.file_nr, 
-                    self.target_structure.len, 
-                    self.r, 
-                    self.solution.hd, 
-                    self.lhd)
+        if self.verbose:
+            summary = '                                    '
+            summary += 'Ep: {:6}, Seq: {:5}, Len : {:3}, Reward: {:5f}, HD: {:3} ({:3})'.format(
+                        self.ep,
+                        self.target_structure.file_nr, 
+                        self.target_structure.len, 
+                        self.r, 
+                        self.solution.hd, 
+                        self.lhd)
                     
-        print(summary, end='\r')
+            print(summary, end='\r')
 
         if self.meta_learning:
             self.next_target_structure()

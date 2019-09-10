@@ -1,4 +1,6 @@
 import re
+import warnings
+warnings.filterwarnings("ignore")
 import tensorflow as tf
 import cv2
 import numpy as np

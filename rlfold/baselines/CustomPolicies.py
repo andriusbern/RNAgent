@@ -1,10 +1,11 @@
 from stable_baselines.common.policies import ActorCriticPolicy, register_policy, RecurrentActorCriticPolicy, FeedForwardPolicy
-import tensorflow as tf
 from stable_baselines.a2c.utils import conv, linear, conv_to_fc, seq_to_batch, batch_to_seq, lstm
 import rlfold.settings as settings
 import numpy as np
-import copy, warnings
-
+import copy
+import warnings
+warnings.filterwarnings("ignore")
+import tensorflow as tf
 
 def conv1d(input_tensor, scope, *, n_filters, filter_size, stride,
          pad='VALID', init_scale=1.0, data_format='NHWC', one_dim_bias=False):
@@ -54,11 +55,9 @@ def custom_cnn(scaled_images, params, **kwargs):
     # First layer
     odb = True if s.kernel_size[0][1] == 1 else False
     # odb = True
-    print('First: {}, odb: {}'.format(s.kernel_size[0], odb))
     out = activ(conv(scaled_images, 'c0', n_filters=s.filters[0], filter_size=s.kernel_size[0], stride=s.stride[0], init_scale=init_scale, one_dim_bias=odb, **kwargs))
     # Following layers
     for i, layer in enumerate(s.filters[1:]):
-        print('Loop: {}'.format(s.kernel_size[i+1]))
         out = activ(conv(out, 'c{}'.format(i+1), n_filters=layer, filter_size=s.kernel_size[i+1], stride=s.stride[i+1], init_scale=init_scale, one_dim_bias=odb, **kwargs))
 
     out = conv_to_fc(out)
@@ -72,7 +71,6 @@ class CustomCnnPolicy(ActorCriticPolicy):
                  params=None, **kwargs):
         super(CustomCnnPolicy, self).__init__(sess, ob_space, ac_space, n_env, n_steps, n_batch, reuse=reuse, scale=True)
         params = settings.ParameterContainer(**params)
-        print(params)
         init_scale = params.pd_init_scale
         activ = getattr(tf.nn, params.activ)
         initializer = getattr(tf, params.kernel_initializer)

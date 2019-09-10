@@ -13,13 +13,15 @@ import rlfold.environments
 # Local
 from rlfold.definitions import Sequence, Dataset, Tester
 import rlfold.settings as settings
-
+import warnings
+warnings.filterwarnings('ignore',category=FutureWarning)
 import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-tf.logging.info('TensorFlow')
-tf.logging.set_verbosity(tf.logging.ERROR)
-tf.logging.info('TensorFlow')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4' 
+tf.compat.v1.logging.info('TensorFlow')
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tf.compat.v1.logging.info('TensorFlow')
 import multiprocessing as mp
+from tqdm import tqdm
 # mp.set_start_method('spawn')
 
 def get_env_type(env_name):
@@ -178,7 +180,6 @@ class SBWrapper(object):
         else:
             for folder in folder_list:
                 if num is not None:
-                    print(folder.split(settings.delimiter))
                     if int(folder.split(settings.delimiter)[-1].split('_')[0]) == num:
                         model_path = folder
                         if not os.path.isfile(os.path.join(model_path, 'model.pkl')):
@@ -186,8 +187,6 @@ class SBWrapper(object):
                         print('Model path:', model_path)
                         break
                 if path is not None:
-                    print(folder)
-                    print(folder.split(settings.delimiter)[-1])
                     if folder.split(settings.delimiter)[-1] == path:
                         model_path = folder
 
@@ -200,7 +199,6 @@ class SBWrapper(object):
         model_file = os.path.join(model_path, 'model.pkl')
         model_object = getattr(stable_baselines, self.config['main']['model'])
         self._unique = model_path.split(settings.delimiter)[-1]
-        print('Unique: {}'.format(self._unique))
         
         self.create_env()
         self.model = model_object.load(model_file[:-4], env=self.env, tensorboard_log=self._env_path)
@@ -441,7 +439,7 @@ class SBWrapper(object):
                 plt.cla(); plt.imshow(img); plt.show(); plt.pause(delay)
         self.model.set_env(self.env)
     
-    def inverse_fold(self, target, budget=50, permute=True, show=False):
+    def inverse_fold(self, target, solution_count=1, budget=50, permute=True, show=False, verbose=False):
         """
         Method for using the model to generate a nucleotide sequence
         solution given a target dot-bracket sequence
@@ -456,29 +454,59 @@ class SBWrapper(object):
         n = self.model.env.get_attr('next_target_structure')[0]
         n()
         self.model.env.set_attr('meta_learning', False)
-        if permute: self.model.env.set_attr('permute', True)
+        self.model.env.set_attr('permute', permute)
 
-        target = self.model.env.get_attr('target')[0]
+        if verbose==0: self.model.env.set_attr('verbose', False)
+        self.model.env.set_attr('ep', 0)
+        target = self.model.env.get_attr('target_structure')[0]
         if show:
             show_rna(target.seq, 'AUAUAU', driver, 0)
         
-        self.test_state = self.model.env.reset()
+        print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
+
+
         # Model
         end = False
-        for _ in range(budget):
-            self.done = [False]
-            while not self.done[0]:
-                action, _ = self.model.predict(self.test_state)
-                self.test_state, _, self.done, _ = self.model.env.step(action)
-                solution = self.model.env.get_attr('prev_solution')[0]
-                if self.done[0]:
-                    solution.summary(True)
-                    if show:
-                        show_rna(solution.folded_design, solution.string, driver, 1)
-                if solution.hd <= 0: end = True
-                if end: break
-            if end: break
-        return solution
+        valid_solutions = []
+        failed_solutions = []
+        # t0 = time.time()
+        progress_bar = tqdm(range(solution_count), ncols=90,position=0)
+        progress_bar.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
+        
+        try:
+            for _ in progress_bar:
+                progress_bar2 = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
+                progress_bar2.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(0,budget, '   '))
+                for attempt in progress_bar2:
+                    self.test_state = self.model.env.reset()
+                    self.done = [False]
+                    end = False
+                    while not self.done[0]:
+                        action, _ = self.model.predict(self.test_state)
+                        self.test_state, _, self.done, _ = self.model.env.step(action)
+                        if self.done[0]:
+                            solution = self.model.env.get_attr('prev_solution')[0]
+                            if verbose == 2:
+                                solution.summary(True)
+                            if show:
+                                show_rna(solution.folded_design, solution.string, driver, 1)
+                            if solution.hd <= 0: 
+                                end = True
+                                if verbose == 1:
+                                    solution.summary(True)
+                                # n()
+                                valid_solutions.append(solution)
+                            else:
+                                failed_solutions.append(solution)
+                            progress_bar2.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
+                    progress_bar.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
+                            # print('T: {:3.2f}s, Solutions: {:4}/{:4}'.format(time.time() - t0, len(valid_solutions), solution_count), end='\r')
+                        # if end: break
+                    if end: break
+                
+        except KeyboardInterrupt:
+            print('Stopped...')
+        return valid_solutions, failed_solutions
 
     def random_sampling(self, target, budget=100):
         """

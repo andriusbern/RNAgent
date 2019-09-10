@@ -16,7 +16,7 @@ class Dataset(object):
             dataset='rfam_learn_train',
             encoding_type=0
         ):
-        print('Loading dataset: {}, sequences: {}...\n'.format(dataset, n_seqs))
+        # print('Loading dataset: {}, sequences: {}...'.format(dataset, n_seqs))
         self.dataset = dataset
         self.path = os.path.join(settings.DATA, dataset)
         self.sequence_length = length
@@ -31,7 +31,6 @@ class Dataset(object):
                 if len(length) <= 2:
                     length = range(length[0], length[1])
                 self.sequences = []
-                print(length)
                 for l in length:
                     sequence_file_numbers = load_length_metadata(dataset, l)    
                     self.sequences += [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in sequence_file_numbers[:n_seqs]]

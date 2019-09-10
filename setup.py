@@ -7,9 +7,9 @@ packages = ['numpy',
             'sklearn',
             'opencv-python',# Image processing
             'matplotlib',   # Visualization
-            'python-qt',
-            'PyQt5',         
-            'pyqtgraph',
+            # 'python-qt',
+            # 'PyQt5',         
+            # 'pyqtgraph',
             'stable_baselines',
             'pyyaml'
             ]
