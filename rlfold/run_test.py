@@ -9,6 +9,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--num', type=int)
     parser.add_argument('-s', '--subdir', type=str)
+    parser.add_argument('-c', '--checkpoint', type=str, default='')
     parser.add_argument('-t', '--timeout', type=int, default=60)
     # parser.add_argument('-r', '--radius', type=int, default=1)
     # parser.add_argument('-b', '--budget', type=int, default=20)
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    trained_model = SBWrapper('RnaDesign', subdir=args.subdir).load_model(num=args.num)
+    trained_model = SBWrapper('RnaDesign', subdir=args.subdir).load_model(num=args.num, checkpoint=args.checkpoint)
 
     # Modify parameters
     # trained_model.config['environment']['permutation_threshold'] = args.threshold

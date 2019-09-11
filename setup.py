@@ -2,7 +2,7 @@ from setuptools import setup
 import time, os
 
 packages = ['numpy',        
-            #'tensorflow',   # ML,
+            'tensorflow',   # ML,
             'gym',
             'sklearn',
             'opencv-python',# Image processing
@@ -11,7 +11,10 @@ packages = ['numpy',
             # 'PyQt5',         
             # 'pyqtgraph',
             'stable_baselines',
-            'pyyaml'
+            'pyyaml',
+            'forgi',
+            'selenium',
+            'tqdm'
             ]
 setup(
     name='rlfold',

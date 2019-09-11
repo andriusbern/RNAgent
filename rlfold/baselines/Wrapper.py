@@ -1,39 +1,24 @@
-import rlfold.settings as settings
 from stable_baselines.common.vec_env import SubprocVecEnv, VecFrameStack, DummyVecEnv
-from stable_baselines.common.schedules import LinearSchedule, linear_interpolation
-from collections import deque
 import numpy as np
 import os, yaml, sys, subprocess, webbrowser, time, datetime, random, copy
 import matplotlib.pyplot as plt
-import stable_baselines, gym, rlfold #,# pybullet_envs, rusher, nao_rl
+import stable_baselines, gym, rlfold
 from stable_baselines import PPO2, GAIL
-import cv2
-from rlfold.interface import show_rna, create_browser
-import rlfold.environments
 # Local
+from rlfold.interface import show_rna, create_browser
 from rlfold.definitions import Sequence, Dataset, Tester
+from tqdm import tqdm
 import rlfold.settings as settings
+import rlfold.environments
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
 import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4' 
-tf.compat.v1.logging.info('TensorFlow')
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-tf.compat.v1.logging.info('TensorFlow')
-import multiprocessing as mp
-from tqdm import tqdm
-# mp.set_start_method('spawn')
 
 def get_env_type(env_name):
     """
     Get the type of environment from the env_name string
     """
-    if 'usher' in env_name:
-        return 'binpacking'
-    elif 'Bullet' in env_name:
-        return 'bullet'
-    elif 'Nao' in env_name or 'Quadruped' in env_name:
-        return 'vrep'
 
     elif 'Rna' in env_name:
         return 'rna'
@@ -57,16 +42,7 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
             env = env_obj(config, rank)
             return env
         return _init
-
-    def make_vrep(**kwargs):
-        """
-        Decorator for vrep environments
-        """
-        def _init():
-            env = nao_rl.make(env_name)
-            return env
-        return _init
-        
+ 
     def make_gym(rank, seed=0, **kwargs):
         """
         Decorator for gym environments
@@ -91,15 +67,9 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
         elif settings.os == 'win32':
             vectorized = SubprocVecEnv(envs, start_method='spawn')
     else:
-        # Non multi-processing env
         vectorized = DummyVecEnv(envs)
-    # Enable frame stacking in the environment
-    if 'frame_stack' in config['main'].keys():
-        if config['main']['frame_stack'] != 0:
-            vectorized = VecFrameStack(vectorized, n_stack=config['main']['frame_stack'])
 
     return vectorized
-
 
 def get_parameters(env_name, model_path=None, config_name=None, config_location=None):
     """
@@ -166,7 +136,7 @@ class SBWrapper(object):
         self.done = True
         self.test_state = None
          
-    def load_model(self, num=None, config_file=None, latest=False, path=None):
+    def load_model(self, num=None, config_file=None, latest=False, path=None, checkpoint=''):
         """
         Load a saved model either from the 
         """
@@ -190,13 +160,12 @@ class SBWrapper(object):
                     if folder.split(settings.delimiter)[-1] == path:
                         model_path = folder
 
-
         self._model_path = model_path
         self.config = get_parameters(self.env_name, self._model_path, config_name=config_file)
         self.config['environment']['path'] = model_path
 
         self.n_steps = self.config['main']['n_steps']
-        model_file = os.path.join(model_path, 'model.pkl')
+        model_file = os.path.join(model_path, 'model{}.pkl'.format(checkpoint))
         model_object = getattr(stable_baselines, self.config['main']['model'])
         self._unique = model_path.split(settings.delimiter)[-1]
         
@@ -377,8 +346,7 @@ class SBWrapper(object):
             self.model.set_env(self.env)
             print('EOF, Recreating environment')
 
-    #########################################
-    # Underscore methods for internal control of training and testing
+
     def train(self, steps=None):
         """
         """
@@ -405,132 +373,64 @@ class SBWrapper(object):
             print('\n\n\nStopped training...\n')
             self._save()
 
-    def _test(self, deterministic=True, rand=False):
-        """
-        Perform a single test step and return the mean actions and the rendered image
-        """
-        if self.done:
-            self.test_state = self.env.reset()
-            self.done = False
-        
-        action, solution = self.model.predict(self.test_state, deterministic=True)
-        print(action, solution)
-        self.test_state, _, _, _ = self.model.env.step(action)
-        
-        img = self.test_state.squeeze()
-        
-        mean_actions = None
-
-        return mean_actions, img
-
-    def run(self, steps=100, delay=0.001, reinit=False, rand=False, render=True, deterministic=True):
-        """
-        Run a small test loop`
-        """
-        
-        self.done = True
-        self._check_env_status()
-        self.model.set_env(self.test_env)
-        for _ in range(steps):
-            _, img = self._test(deterministic=deterministic, rand=random)
-            if render:
-                # img.astype('uint8')
-                img = np.clip(img, 0, 255)
-                plt.cla(); plt.imshow(img); plt.show(); plt.pause(delay)
-        self.model.set_env(self.env)
     
     def inverse_fold(self, target, solution_count=1, budget=50, permute=True, show=False, verbose=False):
         """
         Method for using the model to generate a nucleotide sequence
         solution given a target dot-bracket sequence
         """
+        env = self.test_env
+        target = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
+        data = Dataset(sequences=[target])
+        env.set_attr('dataset', data)
+        env.set_attr('meta_learning', False)
+        env.set_attr('permute', permute)
+        env.set_attr('ep', 0)
+        if verbose==0: env.set_attr('verbose', False)
+        self.model.set_env(env)
 
         if show:
             driver = create_browser('double')
-        self.model.set_env(self.test_env)
-        seq = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
-        data = Dataset(sequences=[seq])
-        self.model.env.set_attr('dataset', data)
-        n = self.model.env.get_attr('next_target_structure')[0]
-        n()
-        self.model.env.set_attr('meta_learning', False)
-        self.model.env.set_attr('permute', permute)
-
-        if verbose==0: self.model.env.set_attr('verbose', False)
-        self.model.env.set_attr('ep', 0)
-        target = self.model.env.get_attr('target_structure')[0]
-        if show:
             show_rna(target.seq, 'AUAUAU', driver, 0)
-        
         print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
-
-
-        # Model
-        end = False
-        valid_solutions = []
-        failed_solutions = []
-        # t0 = time.time()
-        progress_bar = tqdm(range(solution_count), ncols=90,position=0)
-        progress_bar.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
         
+        valid_solutions, failed_solutions = [], []
+        solution_progress = tqdm(range(solution_count), ncols=90,position=0)
+        solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
+        
+        target = self.model.env.get_attr('target_structure')[0]
         try:
-            for _ in progress_bar:
-                progress_bar2 = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
-                progress_bar2.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(0,budget, '   '))
-                for attempt in progress_bar2:
+            for _ in solution_progress:
+                attempts_progress = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
+                attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(0,budget, '   '))
+                
+                for attempt in attempts_progress:
                     self.test_state = self.model.env.reset()
                     self.done = [False]
                     end = False
+
                     while not self.done[0]:
                         action, _ = self.model.predict(self.test_state)
                         self.test_state, _, self.done, _ = self.model.env.step(action)
-                        if self.done[0]:
-                            solution = self.model.env.get_attr('prev_solution')[0]
-                            if verbose == 2:
-                                solution.summary(True)
-                            if show:
-                                show_rna(solution.folded_design, solution.string, driver, 1)
-                            if solution.hd <= 0: 
-                                end = True
-                                if verbose == 1:
-                                    solution.summary(True)
-                                # n()
-                                valid_solutions.append(solution)
-                            else:
-                                failed_solutions.append(solution)
-                            progress_bar2.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
-                    progress_bar.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
-                            # print('T: {:3.2f}s, Solutions: {:4}/{:4}'.format(time.time() - t0, len(valid_solutions), solution_count), end='\r')
-                        # if end: break
+
+                    solution = self.model.env.get_attr('prev_solution')[0]
+                    if verbose == 2: solution.summary(True)
+                    if solution.hd <= 0: 
+                        end = True
+                        if verbose == 1:
+                            solution.summary(True)
+                        valid_solutions.append(solution)
+                    else:
+                        failed_solutions.append(solution)
+                    attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
+                    solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
+                    if show: show_rna(solution.folded_design, solution.string, driver, 1)
                     if end: break
                 
         except KeyboardInterrupt:
             print('Stopped...')
         return valid_solutions, failed_solutions
 
-    def random_sampling(self, target, budget=100):
-        """
-        Randomly sample actions
-        """
-        self.model.set_env(self.test_env)
-        seq = Sequence(target, 0, 0)
-        data = Dataset(sequences=[seq])
-        self.model.env.set_attr('dataset', data)
-        n = self.model.env.get_attr('next_target')[0]()
-        self.env.set_attr('meta_learning', False)
-        
-        self.test_state = self.model.env.reset()
-        # Model
-        for _ in range(budget):
-            self.done = [False]
-            episode_buffer = []
-            while not self.done[0]:
-                
-                action = [self.model.env.action_space.sample()]
-                self.test_state, _, self.done, _ = self.model.env.step(action)
-                solution = self.model.env.get_attr('prev_solution')[0]
-                if self.done[0]:
-                    solution.summary(True)
 
     def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0, wait=False):
         """
@@ -581,204 +481,15 @@ class SBWrapper(object):
                             print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
                             end = True
                             ep += 1
-                            # if show:
-                            #     show_rna(solution.target.seq, solution.string, driver, 0, 'display')
                         if wait: input()
                 if end: break
         print('Solved ', len(solved), '/', len(d.sequences))
 
-        # self.write_test_results(solved, d)
         
         return solved
 
         
 if __name__ == "__main__":
-    # import matplotlib.pyplot as plt
-    # env = 'MountainCarContinuous-v0'
     b = SBWrapper('RnaDesign').create_model()
-    # b.create_model()
     b.visual_test()
 
-
-
-
-
-
-
-
-
-
-    # def evaluate_testset(self, dataset='rfam_learn_test', budget=100, permute=False, show=False, pause=0):
-    #     """
-    #     Run
-    #     """
-    #     # driver = webdriver.Chrome('/home/andrius/chromedriver')
-    #     if show:
-    #         driver = create_browser('double')
-    #     self.model.set_env(self.test_env)
-    #     n_seqs=29 if dataset=='rfam_taneda' else 100
-    #     if dataset=='rfam_learn_train':
-    #         n_seqs=5000
-        
-    #     d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
-    #     self.model.env.set_attr('dataset', d)
-    #     self.model.env.set_attr('randomize', False)
-    #     self.model.env.set_attr('meta_learning', False)
-    #     get_seq = self.model.env.get_attr('next_target')[0]
-    #     self.model.env.set_attr('current_sequence', 0)
-    #     self.model.env.set_attr('permute', permute)
-
-    #     self.test_state = self.model.env.reset()
-    #     solved = []
-        
-    #     for n, seq in enumerate(d.sequences):
-    #         print(n, '\n')
-    #         get_seq()
-    #         target = self.model.env.get_attr('target')[0]
-    #         if show:
-    #             show_rna(target.seq, 'AUAUAU', driver, 0)
-    #             time.sleep(pause)
-    #         end = False
-    #         ep = 0
-    #         for b in range(budget):
-    #             self.done = [False]
-    #             while not self.done[0]:
-    #                 action, _ = self.model.predict(self.test_state)
-    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
-    #                 solution = self.model.env.get_attr('prev_solution')[0]
-                    
-    #                 if self.done[0]:
-    #                     if show and ep%1==0:
-    #                         show_rna(solution.folded_design.seq, solution.string, driver, 1)
-                            
-    #                         time.sleep(pause)
-    #                     if solution.hd <= 0:
-    #                         solution.summary(True)
-    #                         solved.append([n, solution, b+1, budget])
-    #                         print('Solved sequence: {} in {}/{} iterations...'.format(n, b+1, budget))
-    #                         end = True
-    #                         ep += 1
-    #                         # if show:
-    #                         #     show_rna(solution.target.seq, solution.string, driver, 0, 'display')
-    #             if end: break
-    #     print('Solved ', len(solved), '/', len(d.sequences))
-
-    #     self.write_test_results(solved, d)
-        
-    #     return solved
-
-    # def timed_evaluation(self, dataset='rfam_learn_test', limit=60, permute=False, show=False, pause=0):
-    #     """
-    #     Run
-    #     """
-    #     if show:
-    #         driver = create_browser('double')
-    #     self.model.set_env(self.test_env)
-    #     n_seqs=29 if dataset=='rfam_taneda' else 100
-    #     if dataset=='rfam_learn_train':
-    #         n_seqs=5000
-        
-    #     d = Dataset(dataset=dataset, start=1, n_seqs=n_seqs, encoding_type=self.config['environment']['encoding_type'])
-    #     self.model.env.set_attr('dataset', d)
-    #     self.model.env.set_attr('randomize', False)
-    #     self.model.env.set_attr('meta_learning', False)
-    #     get_seq = self.model.env.get_attr('next_target')[0]
-    #     self.model.env.set_attr('current_sequence', 0)
-    #     self.model.env.set_attr('permute', permute)
-
-    #     self.test_state = self.model.env.reset()
-    #     solved = []
-    #     t_total = 0
-        
-    #     attempts = np.zeros([n_seqs], dtype=np.uint8)
-    #     min_hd = np.ones([n_seqs], dtype=np.uint8) * 500
-    #     time_taken = np.zeros([n_seqs])
-    #     try:
-    #         while t_total <= limit:
-    #             ep_start = time.time()
-    #             get_seq()
-    #             target = self.model.env.get_attr('target')[0]
-    #             if show:
-    #                 show_rna(target.seq, 'AUAUAU', driver, 0)
-    #                 time.sleep(pause)
-    #             ep = 0
-                
-    #             self.done = [False]
-    #             while not self.done[0]:
-    #                 action, _ = self.model.predict(self.test_state)
-    #                 self.test_state, _, self.done, _ = self.model.env.step(action)
-    #                 solution = self.model.env.get_attr('prev_solution')[0]
-    #                 num = solution.target.file_nr - 1
-    #                 if self.done[0]:
-    #                     if solution.hd < min_hd[num]: min_hd[num] = solution.hd
-    #                     attempts[num] += 1
-    #                     if show and ep%1==0:
-    #                         show_rna(solution.folded_design.seq, solution.string, driver, 1)
-    #                         time.sleep(pause)
-    #                     t_episode = time.time() - ep_start
-    #                     if solution.hd <= 0:
-    #                         dataset = self.model.env.get_attr('dataset')[0]
-    #                         dataset.sequences.remove(solution.target)
-    #                         solution.summary(True)
-    #                         ep += 1
-    #                     t_total += t_episode
-    #                     time_taken[num] += t_episode
-    #                     if solution.hd <= 0:
-    #                         solved.append([num, solution, attempts[num], min_hd[num], round(time_taken[num],2)])
-    #                         print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(len(solved), n_seqs, num, attempts[num], time_taken[num]))
-    #     except KeyboardInterrupt:
-    #         pass
-    #     print('Solved {}/{}'.format(len(solved), n_seqs))
-    #     print(min_hd)
-
-    #     self.write_test_results(solved, d)
-        
-    #     return solved
-
-    # def write_test_results(self, results, dataset):
-    #     """
-    #     Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
-    #     """
-    #     date = datetime.datetime.now().strftime("%m-%d_%H-%M")
-    #     directory = os.path.join(settings.RESULTS, dataset.dataset)
-    #     if not os.path.isdir(directory): os.makedirs(directory)
-    #     filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-    #     budget = results[0][3]
-    #     with open(filename, 'w') as f:
-
-    #         msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} eval budget.\n'.format(
-    #                 dataset.dataset, date, len(results), dataset.n_seqs, budget)
-    #         # msg += 100 * 
-    #         msg += ''.join(['=']*100) + '\n'
-    #         f.write(msg)    
-        
-    #         for result in results:
-    #             lines = result[1].summary()
-    #             for line in lines:
-    #                 f.write(line + '\n')
-    #             f.write('Solved in: {}/{}\n'.format(result[2], budget))
-
-    # def write_timed_results(self, solved, unsolved, dataset):
-    #     """
-    #     Writes the results of the test in ../results/<dataset>/<date>_<solved>.log
-    #     """
-    #     date = datetime.datetime.now().strftime("%m-%d_%H-%M")
-    #     directory = os.path.join(settings.RESULTS, dataset.dataset)
-    #     if not os.path.isdir(directory): os.makedirs(directory)
-    #     filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
-    #     budget = results[0][3]
-    #     with open(filename, 'w') as f:
-
-    #         msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {} time budget.\n'.format(
-    #                 dataset.dataset, date, len(results), dataset.n_seqs, budget)
-    #         # msg += 100 * 
-    #         msg += ''.join(['=']*100) + '\n'
-    #         f.write(msg)    
-        
-    #         for result in solved:
-    #             lines = result[1].summary()
-    #             for line in lines:
-    #                 f.write(line + '\n')
-    #             f.write('Solved in: {}/{}\n'.format(result[2], budget))
-
-     

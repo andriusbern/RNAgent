@@ -3,6 +3,7 @@ import rlfold.settings as settings
 
 def fold(sequence, worker):
     """
+    For Windows 
     Call RNAfold.exe using subprocess and return 
     the folded secondary structure sequence and its free energy
     """

@@ -6,5 +6,4 @@ import rlfold.settings as settings
 
 if __name__ == "__main__":
     w = SBWrapper('RnaDesign', 'lstm').create_model()
-    # w._tensorboard()
     w.train()

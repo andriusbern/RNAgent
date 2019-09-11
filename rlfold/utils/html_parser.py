@@ -25,7 +25,7 @@ def replace(file_path, pattern, subst, num=0):
     move(abs_path, file_path)
 
 def modify_html(dotbr, seq=None, num=0, html='double'):
-    filename = os.path.join(settings.MAIN_DIR, 'interface', 'fornac', 'dist', '{}.html'.format(html))
+    filename = os.path.join(settings.MAIN_DIR, 'dislay', '{}.html'.format(html))
 
     # print(filename)
 
@@ -56,14 +56,14 @@ def show_rna(dotbr, seq=None, driver=None, num=0, html='double'):
 
 def create_browser(html, browser='Chrome'):
     """
-    Opens a browser window and loads a html from ../rlfold/interface/fornac/dist/*
+    Opens a browser window and loads a html from
     """
     if browser == 'Chrome':
         driver = webdriver.Chrome()
     if browser == 'Firefox':
         driver = webdriver.Firefox()
     
-    path = os.path.join(settings.MAIN_DIR, 'interface', 'fornac', 'dist', html+'.html')
+    path = os.path.join(settings.MAIN_DIR, 'display', html+'.html')
     driver.get('file://' + path)
 
     return driver

@@ -134,6 +134,11 @@ def fold(model, args):
     input()
 
 
+def load_model(directory, number, checkpoint=None):
+    trained_model = SBWrapper(
+        'RnaDesign', directory).load_model(number, checkpoint=checkpoint)
+    return trained_model
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--timeout', type=int, default=60)
@@ -149,16 +154,22 @@ if __name__ == "__main__":
     parser.print_help()
     
     model_dict = {
-        '0': ['experiment4', 2],
-        '1': ['liacs', 5],
-        '2': ['tritanium248', 1],
-        '3': ['experiment4', 1],
-        '4': ['l2', 1]
+        '0': ['experiment4', 2, ''], # Best fo sho, low U
+        '1': ['t238', 1, '10'], # 
+        '2': ['e238', 2, '11'],
+        '3': ['experiment4', 1, '8'],
+        '4': ['long', 1, '56'],
+        '5': ['trit', 1, '20'], # bad
+        # '2': ['l', 1, '20'], # very bad
+        '6': ['experiment5', 1, '14'],
+        '7': ['l2', 1, '32'],
+        '8': ['latest', 1, '39'],
+        '9': ['latest', 2, '31'],
+        '10': ['experiment6', 2, '19'],
         }
 
-    model_num = model_dict[args.model]
-    trained_model = SBWrapper(
-        'RnaDesign', model_num[0]).load_model(model_num[1])
+    params = model_dict[args.model]
+    trained_model = load_model(*params)
 
     try:
         os.system('clear')
@@ -178,6 +189,12 @@ if __name__ == "__main__":
                     break
                 elif target.startswith('n'):
                     args.num_solutions = int(target[1:])
+                elif target.startswith('a'):
+                    args.attempts = int(target[1:])
+                elif target.startswith('m'):
+                    args.model = str(target[1:])
+                    params = model_dict[args.model]
+                    trained_model = load_model(*params)
                 elif target.startswith('s'):
                     args.show = not args.show
                 elif target.startswith('v'):

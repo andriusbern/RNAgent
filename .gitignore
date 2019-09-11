@@ -3,6 +3,9 @@ rlfold/data/rfam_learn_train
 rlfold/analysis
 rlfold/notes.md
 rlfold/results/
+venv/
+trained_models/
+rlfold/mcts.py
 # rlfold/interface
 
 rlfold.egg-info

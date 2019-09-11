@@ -23,8 +23,8 @@ class Tester(object):
         """
         Run evaluation on test sets and save the model'solution checkpoint
         """
-        # datasets = ['rfam_learn_test', 'rfam_taneda', 'rfam_learn_validation', 'eterna']
-        datasets = ['rfam_taneda', 'eterna']
+        datasets = ['rfam_learn_test', 'rfam_taneda', 'rfam_learn_validation', 'eterna']
+        # datasets = ['rfam_taneda', 'eterna']
         results = [None for dataset in datasets]
 
         for i, dataset in enumerate(datasets):
@@ -100,8 +100,8 @@ class Tester(object):
 
                     action, _ = model.predict(test_state)
                     test_state, _, done, _ = model.env.step(action)
-                    print(done)
-                    solution = model.env.get_attr('prev_solution')
+                    # print(done)
+                    solution = model.env.get_attr('prev_solution')[0]
                     target_id = solution.target.file_nr - 1
 
                     # if done[0]:

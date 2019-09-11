@@ -5,35 +5,6 @@ import matplotlib.pyplot as plt
 import copy, datetime, yaml
 from .sequence import Sequence
 
-# plt.ion()
-
-def load_sequence(num, dataset='rfam_learn_train', encoding_type=0):
-    """
-    Load a sequence.rna file and return a Sequence object
-    """
-    print('Loading sequence #{}...'.format(num), end='\r')
-    path = os.path.join(settings.DATA, dataset)
-    filename = os.path.join(path, '{}.rna'.format(num))
-    try:
-        with open(filename, 'r') as f:
-            seq = f.readline()[:-1]
-        return Sequence(seq, filename, num, encoding_type=encoding_type)
-    except FileExistsError:
-        print('File {} does not exist...'.format(filename))
-        return []
-    
-def load_length_metadata(dataset, length):
-    """
-    Loads length metadata
-    """
-    filename = os.path.join(settings.DATA, 'metadata', dataset, 'len', '{}.yml'.format(length))
-    # print('Loaded metadata from {}'.format(filename))
-    try:
-        with open(filename, 'r') as f:
-            data = yaml.load(f)
-        return data
-    except:
-        return []
 
 def hamming_distance(seq1, seq2):
     """
@@ -63,10 +34,37 @@ def highlight_mismatches(seq1, seq2):
     mseq1, mseq2 = '', '' # Modified sequences
     for char1, char2 in zip(seq1, seq2):
         if char1 != char2: # Mismatch
-            mseq1 += '\033[2;31;40m{}\033[0m'.format(char1)
-            mseq2 += '\033[2;31;40m{}\033[0m'.format(char2)
+            mseq1 += '\033[5;36;41m{}\033[0m'.format(char1)
+            mseq2 += '\033[5;36;41m{}\033[0m'.format(char2)
         else:              # Match
             mseq1 += '\033[2;32;40m{}\033[0m'.format(char1)
             mseq2 += '\033[2;32;40m{}\033[0m'.format(char2)
 
     return mseq1, mseq2
+
+def load_sequence(num, dataset='rfam_learn_train', encoding_type=0):
+    """
+    Load a sequence.rna file and return a Sequence object
+    """
+    print('Loading sequence #{}...'.format(num), end='\r')
+    path = os.path.join(settings.DATA, dataset)
+    filename = os.path.join(path, '{}.rna'.format(num))
+    try:
+        with open(filename, 'r') as f:
+            seq = f.readline()[:-1]
+        return Sequence(seq, filename, num, encoding_type=encoding_type)
+    except FileExistsError:
+        print('File {} does not exist...'.format(filename))
+        return []
+    
+def load_length_metadata(dataset, length):
+    """
+    Loads length metadata
+    """
+    filename = os.path.join(settings.DATA, 'metadata', dataset, 'len', '{}.yml'.format(length))
+    try:
+        with open(filename, 'r') as f:
+            data = yaml.load(f)
+        return data
+    except:
+        return []

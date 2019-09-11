@@ -16,7 +16,7 @@ class Dataset(object):
             dataset='rfam_learn_train',
             encoding_type=0
         ):
-        # print('Loading dataset: {}, sequences: {}...'.format(dataset, n_seqs))
+        
         self.dataset = dataset
         self.path = os.path.join(settings.DATA, dataset)
         self.sequence_length = length
@@ -75,11 +75,6 @@ class Dataset(object):
         plt.ylabel('Number of sequences')
         plt.xlabel('Sequence length')
         plt.show()
-
-    def write_csv(self):
-        """
-        Write the detailed statistics about every sequence into a .csv file
-        """
 
     def length_grouping(self):
         """
