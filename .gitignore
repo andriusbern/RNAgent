@@ -6,6 +6,7 @@ rlfold/results/
 venv/
 trained_models/
 rlfold/mcts.py
+geckodriver.log
 # rlfold/interface
 
 rlfold.egg-info

@@ -1,5 +1,5 @@
 from rlfold.definitions import Dataset
-from rlfold.interface import show_rna, create_browser
+from rlfold.utils import show_rna, create_browser
 import os, datetime, sys, time
 import rlfold.settings as settings
 import numpy as np
@@ -61,7 +61,7 @@ class Tester(object):
         # Get and set attributes
         model.env.set_attr('dataset', test_set)
         model.env.set_attr('randomize', False)
-        model.env.set_attr('meta_learning', False)
+        model.env.set_attr('meta_learning', True)
         model.env.set_attr('current_sequence', 0)
         model.env.set_attr('permute', permute)
         data = model.env.get_attr('dataset')[0]
@@ -77,18 +77,18 @@ class Tester(object):
         min_hd   = np.ones([n_seqs],  dtype=np.uint8) * 500
         t_per_sequence = np.zeros([n_seqs])
 
-        for next_target in get_next_target:
-            next_target()
-        model.env.reset()
+        # for next_target in get_next_target:
+        #     next_target()
+        # model.env.reset()
         
         # get_next_target()
+        test_state = model.env.reset()
         try:
-            test_state = model.env.reset()
             while t_total <= time_limit:
                 ep_start = time.time()
 
-                for next_target in get_next_target:
-                    next_target()
+                # for next_target in get_next_target:
+                #     next_target()
 
                 target = model.env.get_attr('target_structure')[0]
                 if show:
@@ -100,12 +100,9 @@ class Tester(object):
 
                     action, _ = model.predict(test_state)
                     test_state, _, done, _ = model.env.step(action)
-                    # print(done)
-                    solution = model.env.get_attr('prev_solution')[0]
-                    target_id = solution.target.file_nr - 1
 
-                    # if done[0]:
-                        # Display solution
+                solution = model.env.get_attr('prev_solution')[0]
+                target_id = solution.target.file_nr - 1
                 if show:
                     show_rna(solution.folded_design, solution.string, driver, 1)
                     time.sleep(pause)

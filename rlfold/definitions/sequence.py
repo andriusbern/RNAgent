@@ -1,7 +1,7 @@
 import numpy as np
 import forgi, math
 import matplotlib.pyplot as plt
-from rlfold.interface import create_browser, show_rna
+from rlfold.utils import create_browser, show_rna
 
 class Sequence(object):
     """

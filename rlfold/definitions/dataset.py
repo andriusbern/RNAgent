@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from rlfold.definitions import load_length_metadata, load_sequence
 from rlfold.definitions import Sequence
 import rlfold.settings as settings
-from rlfold.interface import show_rna, create_browser
+from rlfold.utils import show_rna, create_browser
 
 class Dataset(object):
     def __init__(
@@ -16,7 +16,7 @@ class Dataset(object):
             dataset='rfam_learn_train',
             encoding_type=0
         ):
-        
+
         self.dataset = dataset
         self.path = os.path.join(settings.DATA, dataset)
         self.sequence_length = length

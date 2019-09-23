@@ -25,7 +25,7 @@ def replace(file_path, pattern, subst, num=0):
     move(abs_path, file_path)
 
 def modify_html(dotbr, seq=None, num=0, html='double'):
-    filename = os.path.join(settings.MAIN_DIR, 'dislay', '{}.html'.format(html))
+    filename = os.path.join(settings.MAIN_DIR, 'display', '{}.html'.format(html))
 
     # print(filename)
 

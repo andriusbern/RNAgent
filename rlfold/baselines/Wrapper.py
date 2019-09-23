@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import stable_baselines, gym, rlfold
 from stable_baselines import PPO2, GAIL
 # Local
-from rlfold.interface import show_rna, create_browser
+from rlfold.utils import show_rna, create_browser
 from rlfold.definitions import Sequence, Dataset, Tester
 from tqdm import tqdm
 import rlfold.settings as settings
@@ -20,7 +20,7 @@ def get_env_type(env_name):
     Get the type of environment from the env_name string
     """
 
-    elif 'Rna' in env_name:
+    if 'Rna' in env_name:
         return 'rna'
     else:
         try:
@@ -55,7 +55,7 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
     
     if config is not None:
         n_workers = config['main']['n_workers']
-    mapping = {'vrep': make_vrep, 'gym': make_gym, 'rna':make_rna}
+    mapping = {'gym': make_gym, 'rna':make_rna}
     env_type = get_env_type(env_name)
     env_decorator = mapping[env_type]
     envs = [env_decorator(rank=x) for x in range(n_workers)]
@@ -136,7 +136,7 @@ class SBWrapper(object):
         self.done = True
         self.test_state = None
          
-    def load_model(self, num=None, config_file=None, latest=False, path=None, checkpoint=''):
+    def load_model(self, num=None, config_file=None, latest=False, path=None, checkpoint='', n_envs=1):
         """
         Load a saved model either from the 
         """
@@ -163,6 +163,7 @@ class SBWrapper(object):
         self._model_path = model_path
         self.config = get_parameters(self.env_name, self._model_path, config_name=config_file)
         self.config['environment']['path'] = model_path
+        self.config['main']['n_workers'] = n_envs
 
         self.n_steps = self.config['main']['n_steps']
         model_file = os.path.join(model_path, 'model{}.pkl'.format(checkpoint))
@@ -249,7 +250,7 @@ class SBWrapper(object):
         testconf['environment']['meta_learning'] = False
         # testconf['main']['n_workers'] = 1
         # if self._env_type is not 'vrep' or self._env_type is not 'rna':
-        self.test_env = create_env(self.env_name, testconf, 1)
+        self.test_env = create_env(self.env_name, testconf)
 
     from stable_baselines.common.policies import CnnLnLstmPolicy
 
@@ -387,18 +388,19 @@ class SBWrapper(object):
         env.set_attr('permute', permute)
         env.set_attr('ep', 0)
         if verbose==0: env.set_attr('verbose', False)
+        env.get_attr('next_target_structure')[0]()
         self.model.set_env(env)
-
+        target = env.get_attr('target_structure')[0]
         if show:
             driver = create_browser('double')
             show_rna(target.seq, 'AUAUAU', driver, 0)
-        print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
         
         valid_solutions, failed_solutions = [], []
         solution_progress = tqdm(range(solution_count), ncols=90,position=0)
         solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
         
         target = self.model.env.get_attr('target_structure')[0]
+        print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
         try:
             for _ in solution_progress:
                 attempts_progress = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
@@ -424,6 +426,70 @@ class SBWrapper(object):
                         failed_solutions.append(solution)
                     attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
                     solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
+                    if show: show_rna(solution.folded_design, solution.string, driver, 1)
+                    if end: break
+                
+        except KeyboardInterrupt:
+            print('Stopped...')
+        return valid_solutions, failed_solutions
+
+        
+    def multi_fold(self, target, solution_count=1, budget=50, permute=True, show=False, verbose=False):
+        """
+        Method for using the model to generate a nucleotide sequence
+        solution given a target dot-bracket sequence
+        """
+        env = self.test_env
+        
+        target = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
+        data = Dataset(sequences=[target])
+        env.set_attr('dataset', data)
+        env.set_attr('meta_learning', True)
+        env.set_attr('permute', permute)
+        env.set_attr('ep', 0)
+        if verbose==0: env.set_attr('verbose', False)
+        next_structures = env.get_attr('next_target_structure')
+        for next_structure in next_structures:
+            next_structure()
+        [n() for n in next_structures]
+
+        self.model.set_env(env)
+        target = env.get_attr('target_structure')[0]
+        if show:
+            driver = create_browser('double')
+            show_rna(target.seq, 'AUAUAU', driver, 0)
+        print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
+        
+        valid_solutions, failed_solutions = [], []
+        solution_progress = tqdm(range(solution_count), ncols=90,position=0)
+        solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count*len(next_structures)))
+        
+        try:
+            for _ in solution_progress:
+                attempts_progress = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
+                attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(0,budget, '   '))
+                
+                for attempt in attempts_progress:
+                    self.test_state = self.model.env.reset()
+                    self.done = [False]
+                    end = False
+
+                    while not self.done[0]:
+                        action, _ = self.model.predict(self.test_state)
+                        self.test_state, _, self.done, _ = self.model.env.step(action)
+
+                    solutions = self.model.env.get_attr('prev_solution')
+                    for solution in solutions:
+                        if verbose == 2: solution.summary(True)
+                        if solution.hd <= 0: 
+                            end = True
+                            if verbose == 1:
+                                solution.summary(True)
+                            valid_solutions.append(solution)
+                        else:
+                            failed_solutions.append(solution)
+                    attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
+                    solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count*len(next_structures)))
                     if show: show_rna(solution.folded_design, solution.string, driver, 1)
                     if end: break
                 

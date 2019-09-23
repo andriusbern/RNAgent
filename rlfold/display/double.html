@@ -17,29 +17,29 @@
             let container = new fornac.FornaContainer("#custom_colors", {
                 'applyForce': false,
                 'allowPanningAndZooming': true,
-                'initialSize': [600, 600]
+                'initialSize': [400, 400]
             });
 
             let options = {
-                'structure': '.....((((..........((((...))))(((((...((.....))...)))))...(((((((((...)))...))).)))...(((...(((....))).))).)))).....',
+                'structure': '.....((((.((((((.(((.(((((.((((.(((((((.((....((.((.((.....))))))))))))))).)))))))))))))))))))))).....',
                 // 'sequence': 'AUAUAU'
             };
             container.addRNA(options.structure, options);
             container.setSize();
 
-            container.addCustomColorsText('1:red         9:#ff7f0e 10:#ff7f0e 11:#ff7f0e 12:#aec7e8');
+            // container.addCustomColorsText('1:red         9:#ff7f0e 10:#ff7f0e 11:#ff7f0e 12:#aec7e8');
         }
 
         function normalContainer() {
             let container = new fornac.FornaContainer("#rna_ss", {
                 'applyForce': false,
                 'allowPanningAndZooming': true,
-                'initialSize': [600, 600]
+                'initialSize': [400, 400]
             });
 
             let options = {
-                'structure': '.....((((.((((.....((((...)))).))))...(((..((((((...)))...)))((((((...)))...))).)))...(((...(((....))).))).)))).....',
-                'sequence': 'AAAAAGACCACCCCAAAAACCCAGCAUGGGCGGGGAAAGCCAAGCCAGAAAAUCUAACGGCGCCAGGGGACCUAAAGGCAGGCAAAGGCAAAGGGAAAGCCCAGCCAGGUCAAGAA'
+                'structure': '.....((((.((((((.(((.(((((.((((((.((.((.((.((.((.((.((.....)))))))))))))))))))))))))))))))))))))).....',
+                'sequence': 'GAAAACGGGACCCGGGAGGGAGACGGAGGGGAAAGAAGGAGGAGGAGCAGGAGCAAAAAGCCCGCCCCCCCUCUUCCCCCCGUCCCCCCCGGGCCCGAAAAA'
             };
             container.addRNA(options.structure, options);
             container.setSize();

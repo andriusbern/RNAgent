@@ -7,7 +7,7 @@ from rlfold.definitions import colorize_nucleotides, highlight_mismatches
 import numpy as np
 
 import RNA
-
+RNA.cvar.uniq_ML = 1
 header = '\n' + '='*120 + '\n'
 
 param_files = {
@@ -104,13 +104,23 @@ def find_unique(solutions):
 
 def fold(model, args):
     t0 = time.time()
-    valid, failed = model.inverse_fold(
-        target=target,
-        solution_count=args.num_solutions,
-        budget=args.attempts,
-        permute=args.permute,
-        show=args.show,
-        verbose=args.verbosity)
+
+    if args.multi:
+        valid, failed = model.multi_fold(
+            target=target,
+            solution_count=args.num_solutions,
+            budget=args.attempts,
+            permute=args.permute,
+            show=args.show,
+            verbose=args.verbosity)
+    else:
+        valid, failed = model.inverse_fold(
+            target=target,
+            solution_count=args.num_solutions,
+            budget=args.attempts,
+            permute=args.permute,
+            show=args.show,
+            verbose=args.verbosity)
 
     unique = find_unique(valid)
     t = time.time() - t0
@@ -135,8 +145,9 @@ def fold(model, args):
 
 
 def load_model(directory, number, checkpoint=None):
+    n_envs = 6 if args.multi else 1
     trained_model = SBWrapper(
-        'RnaDesign', directory).load_model(number, checkpoint=checkpoint)
+        'RnaDesign', directory).load_model(number, checkpoint=checkpoint, n_envs=n_envs)
     return trained_model
 
 if __name__ == "__main__":
@@ -150,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--failed', action='store_false')
     parser.add_argument('-p', '--permute', action='store_false')
     parser.add_argument('-c', '--vienna_config', type=int, default=1)
+    parser.add_argument('--multi', action='store_true')
     args = parser.parse_args()
     parser.print_help()
     
@@ -157,11 +169,11 @@ if __name__ == "__main__":
         '0': ['experiment4', 2, ''], # Best fo sho, low U
         '1': ['t238', 1, '10'], # 
         '2': ['e238', 2, '11'],
-        '3': ['experiment4', 1, '8'],
-        '4': ['long', 1, '56'],
-        '5': ['trit', 1, '20'], # bad
+        '3': ['experiment5', 1, '12'],
+        '4': ['experiment4', 1, '10'],
+        '5': ['long', 1, '56'],
+        '6': ['trit', 1, '20'], # bad
         # '2': ['l', 1, '20'], # very bad
-        '6': ['experiment5', 1, '14'],
         '7': ['l2', 1, '32'],
         '8': ['latest', 1, '39'],
         '9': ['latest', 2, '31'],
@@ -179,14 +191,27 @@ if __name__ == "__main__":
                 config_summary(args)
                 target = input(
                     header + '\n\nEnter the target secondary RNA structure in dot-bracket notation: \n')
-                check = re.compile(r'[^.)()]').search  # Regex for dotbrackets
+                dot_bracket_check = re.compile(r'[^.)()]').search  # Regex for dotbrackets
+                nucl_check = re.compile(r'[^AUGC]').search
 
-                if not bool(check(target)) and len(target) > 0:
+                if not bool(dot_bracket_check(target)) and len(target) > 0:
                     os.system('clear')
                     config_summary(args)
-                    seq,_ = highlight_mismatches(target, target)
+                    seq, _ = highlight_mismatches(target, target)
                     print(header, '\nTarget:  ' + seq)
                     break
+                if not bool(nucl_check(target)) and len(target) > 0:
+                    nucleotides = colorize_nucleotides(target)
+                    target, _ = RNA.fold(target)
+                    config_summary(args)
+                    seq, _ = highlight_mismatches(target, target)
+                    
+                    print(header, '\nTarget:  ' + seq)
+                    print('\nSequence: ' + nucleotides)
+                    break
+
+
+
                 elif target.startswith('n'):
                     args.num_solutions = int(target[1:])
                 elif target.startswith('a'):

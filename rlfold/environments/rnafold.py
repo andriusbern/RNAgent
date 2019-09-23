@@ -10,11 +10,6 @@ class RnaDesign(gym.Env):
         self.config = config['environment']
         self.env_id = rank
 
-        self.dataset = self.load_data()
-        self.current_sequence = 0
-        self.next_target_structure()
-        self.prev_solution = None
-
         # Parameters
         self.randomize     = self.config['randomize']
         self.meta_learning = self.config['meta_learning']
@@ -24,6 +19,11 @@ class RnaDesign(gym.Env):
         self.r    = 0
         self.done = False
         self.verbose = True
+
+        self.dataset = self.load_data()
+        self.current_sequence = 0
+        self.next_target_structure()
+        self.prev_solution = None 
 
         state_size = np.shape(self.solution.get_state())
         self.observation_space = gym.spaces.Box(shape=(state_size[0], self.config['kernel_size']*2, 1), low=0, high=1,dtype=np.uint8)
@@ -97,7 +97,7 @@ class RnaDesign(gym.Env):
         else:
             index = self.current_sequence = (self.current_sequence + 1) % len(self.dataset.sequences)
         self.target_structure = self.dataset.sequences[index]
-
+        self.solution = Solution(target=self.target_structure, config=self.config)
 
 if __name__ == "__main__":
     from rlfold.baselines import SBWrapper, get_parameters
