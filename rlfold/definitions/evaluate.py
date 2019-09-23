@@ -47,6 +47,7 @@ class Tester(object):
         """
         model = self.wrapper.model
 
+
         # Set a single threaded environment for testing
         model.set_env(self.wrapper.test_env)
 
@@ -69,7 +70,6 @@ class Tester(object):
 
         if show:
             driver = create_browser('double')
-
 
         solved  = []
         t_total = 0
