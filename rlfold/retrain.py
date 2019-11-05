@@ -11,6 +11,6 @@ import os, argparse, time
 import rlfold.settings as settings
 
 if __name__ == "__main__":
-    w = SBWrapper('RankedRnaDesign', 'baby').create_model()
+    w = SBWrapper('RankedRnaDesign', 'baby').load_model(16)
     w._tensorboard()
     w.train()

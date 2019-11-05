@@ -4,6 +4,9 @@ import os, datetime, sys, time
 import rlfold.settings as settings
 import numpy as np
 import pandas as pd
+sys.path.append('/home/andrius/thesis/code/comparison/learna/src')
+# from learna import Learna_fold
+
 
 class Tester(object):
     """
@@ -21,7 +24,7 @@ class Tester(object):
 
     def evaluate(self, time_limit=60, verbose=False, permute=False, show=False, pause=0):
         """
-        Run evaluation on test sets and save the model'solution checkpoint
+        Run evaluation on test sets and save the model solution checkpoint
         """
         datasets = ['rfam_learn_test', 'rfam_taneda', 'rfam_learn_validation', 'eterna']
         # datasets = ['rfam_taneda', 'eterna']
@@ -125,7 +128,7 @@ class Tester(object):
                             t_per_sequence[target_id]))
 
                     # Remove solved target from targets to be solved
-                    data.sequences.remove(solution.target)
+                    # data.sequences.remove(target)
                     solved.append(
                         [target_id,
                             solution, 

@@ -1,20 +1,22 @@
-import cv2
-from rlfold.definitions import colorize_nucleotides
-from rlfold.utils import create_browser, show_rna
+# import cv2
+# from rlfold.definitions import colorize_nucleotides
+# from rlfold.utils import create_browser, show_rna
+import numpy as np
 
 ################
 ### Test methods
 
 def test_run(env):
-    for _ in range(1):
+    for i in range(100):
         env.reset()
+        print(i+1)
+        print(env.target_structure.seq)
         while not env.done:
             action = env.action_space.sample()
             _, _, env.done, _ = env.step(action)
-            print(env.target_structure.seq)
-            print(env.solution.string, end='\r\r\r') #' ', env.target_structure.seq, '\n ',
+            # print(env.solution.string, end='\r\r\r') #' ', env.target_structure.seq, '\n ',
             # time.sleep(0.05)
-            input()
+            # input()
         env.next_target_structure()
     env.reset()
     
@@ -101,3 +103,13 @@ def graph_visual_test(env, pause=True):
         print(''.join([' '] * 500))
         env.solution.summary(True)
         print('\n')
+
+if __name__ == "__main__":
+    from rlfold.baselines import SBWrapper, get_parameters
+    from rlfold.environments import RnaDesign
+    from rlfold.definitions import Dataset
+
+    d = Dataset(start=1, n_seqs=100, dataset='eterna', encoding_type=2)
+    e = RnaDesign(get_parameters('RnaDesign'))
+    e.dataset = d
+    test_run(e)

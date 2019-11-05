@@ -20,9 +20,6 @@ if __name__ == "__main__":
     trained_model = SBWrapper('RnaDesign', subdir=args.subdir).load_model(num=args.num, checkpoint=args.checkpoint)
 
     # Modify parameters
-    # trained_model.config['environment']['permutation_threshold'] = args.threshold
-    # trained_model.config['environment']['permutation_radius'] = args.radius
-    # trained_model.config['environment']['permutation_budget'] = args.budget
 
     # trained_model._tensorboard()
     trained_model.test_runner.evaluate(time_limit=args.timeout, permute=True, verbose=True)

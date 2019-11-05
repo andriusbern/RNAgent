@@ -1,16 +1,20 @@
 import numpy as np
-import copy, random, os, datetime
+import copy, random, os, datetime, sys
 from rlfold.definitions import Sequence, hamming_distance
 from rlfold.definitions import colorize_nucleotides, highlight_mismatches
 from rlfold.utils import create_browser, show_rna
 import rlfold.settings as settings
-import networkx as nx
-
+import forgi
+import time as t
+try:
+    sys.path.remove('/usr/local/lib/python3.6/site-packages')
+except:
+    pass
+import RNA
 
 if settings.os == 'linux':
-    import RNA
-    RNA.cvar.dangles = 1
-    RNA.cvar.noGU = 0
+    # RNA.cvar.dangles = 2
+    # RNA.cvar.noGU = 0
 
     param_files = {
         1: 'rna_turner2004.par',
@@ -18,8 +22,8 @@ if settings.os == 'linux':
         3: 'rna_andronescu2007.par',
         4: 'rna_langdon2018.par',
     }
-    params = os.path.join(settings.MAIN_DIR, 'utils', param_files[2])
-    RNA.read_parameter_file(params)
+    # params = os.path.join(settings.MAIN_DIR, 'utils', param_files[])
+    # RNA.read_parameter_file(params)
     # RNA.cvar.uniq_ML = 1
     # RNA.cvar.no_closingGU = 1
     # RNA.cvar.betaScale = 1.5
@@ -34,15 +38,18 @@ class Solution(object):
     """
     Class for logging generated nucleotide sequence solutions
     """
-    def __init__(self, target, config):
-
+    def __init__(self, target, config=None, string=None, time=None, source='rlfold'):
         self.config = config
         self.target = target
+        self.time = None
+        self.start = None
         self.mapping         = {0:'A', 1:'C', 2:'G', 3:'U'}
         self.reverse_mapping = {'A':0, 'C':1, 'G':2, 'U':3}
         self.reverse_action  = {0:3, 1:2, 2:1, 3:0}
+        self.source = source
+        self.mismatch_indices = None
         
-        self.str = None
+        self.str = []
         self.use_full_state = self.config['full_state']
         if 'use_padding' in self.config.keys():
             self.use_padding = self.config['use_padding']
@@ -51,8 +58,27 @@ class Solution(object):
 
         # Statistics
         self.solution_id = settings.get_solution_id()
-        self.hd = 100
-        self.fe = 0
+        self.hd = 100 # Hamming
+        self.md = 0   # Mountain
+        self.fe = 0   # Gibbs free energy
+        self.probability = None
+
+        # Partition function
+        self.partition_prob = None
+        self.partition_fn = None
+
+        # Centroid
+        self.centroid_structure = None
+        self.centroid_dist = None
+        self.centroid_en = None
+
+        # MEA
+        self.MEA_structure = None
+        self.MEA = None
+        self.MEA_en = None
+        self.ensemble_diversity = None
+        self.ensemble_defect = None
+
         self.reward = 0
         self.folded_design = ''
         self.reward_exp = config['reward_exp']
@@ -60,6 +86,14 @@ class Solution(object):
         self.index = 0
         self.padded_index = self.kernel_size
         self.get_representations()
+        if string is not None:
+            self.str = [x for x in string]
+            self.evaluate(string, permute=False, compute_statistics=True)
+        if time is None:
+            self.start = t.time()
+        else:
+            self.start = None
+            self.time = time
 
     def get_representations(self):
         """
@@ -97,11 +131,6 @@ class Solution(object):
         else:
             return self.nucleotide_encoding
 
-    # def graph_action(self, action):
-    #     """
-    #     """
-    #     self.graph_based_encoding
-
     def str_action(self, action):
         if self.str[self.index] == '-':
             self.str[self.index] = self.mapping[action]
@@ -132,13 +161,6 @@ class Solution(object):
                 pair = 0
             index = self.reverse_action[action] 
             self.nucleotide_encoding[index, pair] = 1
-    
-    def action(self, action):
-        """
-        Perform an appropriate action based on config
-        """
-
-    
 
     def find_next_unfilled(self):
         """
@@ -161,31 +183,56 @@ class Solution(object):
         Return the current state of the solution (window around the current nucleotide)
         """
 
-        if self.use_padding:
-            start = self.padded_index - self.kernel_size 
-            end   = self.padded_index + self.kernel_size
+        start = self.padded_index - self.kernel_size 
+        end   = self.padded_index + self.kernel_size
 
-            if self.config['use_nucleotides']:
-                state = np.vstack([self.structure_encoding[:,start:end], self.nucleotide_encoding[:,start:end]])
-            else:
-                state = self.structure_encoding[:, start:end]
+        if self.config['use_nucleotides']:
+            state = np.vstack([self.structure_encoding[:,start:end], self.nucleotide_encoding[:,start:end]])
+        else:
+            state = self.structure_encoding[:, start:end]
+        
+        if reshape:
+            state = state.flatten()
+        else:
             state = np.expand_dims(state, axis=2)
-
         return state
+
+    def compute_statistics(self):
+        model_details = RNA.md()
+        fc = RNA.fold_compound(self.string, model_details)
+        fold, fe = fc.mfe()
+        fc.exp_params_rescale(self.fe)
+        self.partition_prob, self.partition_fn = fc.pf()
+        self.centroid_structure, self.centroid_dist = fc.centroid()
+        self.centroid_en = fc.eval_structure(self.centroid_structure)
+        self.MEA_structure, self.MEA = fc.MEA()
+        self.MEA_en = fc.eval_structure(self.MEA_structure)
+        self.probability = fc.pr_structure(fold)
+        self.ensemble_diversity = fc.mean_bp_distance()
+        self.ensemble_defect = fc.ensemble_defect(fold)
+        self.md = RNA.dist_mountain(self.target.seq, fold)
     
-    def evaluate(self, string=None, verbose=False, permute=False):
+    def evaluate(self, string=None, verbose=False, permute=False, compute_statistics=False, boost=False):
         """
         Evaluate the current solution, measure the hamming distance between the folded structure and the target
         """
-
+        if boost and string is None:
+            self.boost()
         if string is None: string = self.string
-        self.folded_design, self.fe = fold_fn(string)
-        self.hd, mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
+
+        self.folded_design, self.fe = RNA.fold(string)
+        # self.folded_design, self.fe = fc.mfe()
+        self.hd, self.mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
+
+        if compute_statistics:
+            self.compute_statistics()
+        # Evaluate distance
 
         # Permutations
         if permute and 0 < self.hd <= self.config['permutation_threshold']:
-            self.str, self.hd = self.local_improvement(mismatch_indices, budget=self.config['permutation_budget'], verbose=verbose)
+            self.str, self.hd = self.local_improvement(self.mismatch_indices, budget=self.config['permutation_budget'], verbose=verbose)
             self.folded_design, self.fe = fold_fn(self.string)
+            _, self.mismatch_indices = hamming_distance(self.target.seq, self.folded_design)
             # self.folded_design = Sequence(self.folded_design, encoding_type=self.config['encoding_type'])
             
         reward = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
@@ -194,19 +241,18 @@ class Solution(object):
             reward = reward/2 + reward/2 * (0.12 - gcau['U'])
 
         self.reward = reward
-        return reward, self.hd, mismatch_indices
+        if self.start is not None:
+            self.time = t.time() - self.start
+        return reward, self.hd, self.mismatch_indices
 
     def local_improvement(self, original_mismatch_indices, budget=20, verbose=True):
         """
         Performs a local improvement on the mismatch sites 
         """
- 
         step = 0
         hd = self.hd
-        if self.config['permutation_budget'] == 0:
-            budget = len(original_mismatch_indices) * 2
-        else:
-            budget = self.config['permutation_budget']
+
+        budget = self.config['permutation_budget']
 
         window = range(1, self.config['permutation_radius']+1)
         def get_surrounding(mismatches):
@@ -225,9 +271,10 @@ class Solution(object):
 
         best_permutation, best_mismatch_indices = None, None
         min_hd = 500
-        while self.hd != 0 and step < budget:
-            if verbose:
-                print('Permutation #{:3}, HD: {:2}'.format(step, self.hd), end='\r')
+        p = 0
+        while hd != 0 and step < budget:
+            # if verbose:
+            print('Permutation #{:3}, HD: {:2}'.format(step, hd), end='\r')
             
             if min_hd > self.hd:
                 permutation = copy.deepcopy(self.str)
@@ -274,10 +321,83 @@ class Solution(object):
             # print(mm1)
             # print(mm2)
             # input()
-        if hd == 0 and verbose:
-            print('\nPermutation succesful in {}/{} steps.'.format(step, budget))
+        if hd == 0:
+            self.source = 'rlfold*'
+            if verbose:
+                print('\nPermutation successful in {}/{} steps.'.format(step, budget))
         return best_permutation, min_hd
 
+
+    def boost(self, full=False):
+        # Internal
+        bg, = forgi.load_rna(self.target.seq)
+        for i in bg.iloop_iterator():
+            dims = bg.get_node_dimensions(i)
+            indices = bg.elements_to_nucleotides([i])
+            strand1 = indices[:dims[0]]
+            strand2 = indices[-dims[1]:]
+
+            if dims[1] > dims[0]:
+                strand1, strand2 = strand2, strand1
+            dims = (max(dims), min(dims))
+
+            if dims == (1, 1):
+                if random.random() > 0.5:
+                    self.str[strand1[0]-1] = 'U' # G
+                    self.str[strand2[-1]-1] = 'U' # A
+
+            if dims == (2, 1):
+                if random.random() > 0.5:
+                    self.str[strand1[0]-1], self.str[strand1[1]-1] = 'U', 'C' # G, C / G, A
+                    self.str[strand2[0]-1] = 'U' # A / G
+
+            if full and dims == (2, 2):
+                if random.random() > 0.5:
+                    self.str[strand1[0]-1], self.str[strand1[1]-1] = 'U', 'G'
+                    self.str[strand2[0]-1], self.str[strand2[1]-1] = 'U', 'G'
+
+
+            if (dims[0] > 2 and dims[1] > 2) and (dims[0] >= 3 or dims[1] >= 3):
+                if random.random() > 0.5:
+                    self.str[strand1[0]-1], self.str[strand1[1]-1] = 'G', 'G'
+                    self.str[strand2[0]-1], self.str[strand2[1]-1] = 'A', 'A'
+    
+        # Hairpins
+        for h in bg.hloop_iterator():
+            dims = bg.get_node_dimensions(h)
+            indices = bg.elements_to_nucleotides([h])
+            strand1 = indices[:dims[0]]
+            if random.random() > 0.4 and len(indices) > 3:
+                self.str[strand1[0]-1] = 'G'
+                self.str[strand1[-1]-1] = 'A'
+            
+        # Close stems with GC/CG
+        pair = ('C', 'G') if random.random() > 0.5 else ('G', 'C')
+        for s in bg.stem_iterator():
+            dims = bg.get_node_dimensions(s)
+            indices = bg.elements_to_nucleotides([s])
+            strand1 = indices[:dims[0]]
+            strand2 = indices[-dims[1]:]
+
+            # pair = ('C', 'G') if random.random() > 0.99 else ('G', 'C')
+            if random.random() > 0.5:
+                self.str[strand1[0]-1], self.str[strand2[-1]-1] = pair
+                self.str[strand1[-1]-1], self.str[strand2[0]-1] = list(reversed(pair))
+                
+        pairs = ('C', 'A') if random.random() > 0.5 else ('A', 'C')
+        if full:
+            for m in list(bg.mloop_iterator())[1:-2]:
+                dims = bg.get_node_dimensions(m)
+                indices = bg.elements_to_nucleotides([m])
+                strand1 = indices[:dims[0]]
+                if len(strand1) > 1:
+                    if random.random() > 0.5:
+                        
+                        self.str[strand1[0]-1], self.str[strand1[1]-1] = pairs
+
+            # strand2 = indices[-dims[1]:]
+
+        
     def variance_reward(self):
         """
         A reward that penalizes solutions that overuse or underuse nucleotide types.
@@ -325,6 +445,13 @@ class Solution(object):
             for line in console_output:
                 print(line)
         return summary
+
+    def short_summary(self):
+        print("\n    %s\nMFE %s (%6.2f)" % (string, self.folded_design, self.fe))
+        print("PF  %s [%6.2f]" % (self.partition_prob, self.partition_fn))
+        print("CNT %s {%6.2f d=%.2f}" % (self.centroid_structure, self.centroid_en, self.centroid_dist))
+        print("MEA %s {%6.2f MEA=%.2f}" % (self.MEA_structure, self.MEA_en, self.MEA))
+        print(" frequency of mfe structure in ensemble %g; ensemble diversity %-6.2f" % (self.probability), self.ensemble_diversity)
 
     def write_solution(self):
         """

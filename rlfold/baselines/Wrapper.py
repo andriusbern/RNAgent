@@ -3,7 +3,7 @@ import numpy as np
 import os, yaml, sys, subprocess, webbrowser, time, datetime, random, copy
 import matplotlib.pyplot as plt
 import stable_baselines, gym, rlfold
-from stable_baselines import PPO2, GAIL
+from stable_baselines import PPO2
 # Local
 from rlfold.utils import show_rna, create_browser
 from rlfold.definitions import Sequence, Dataset, Tester
@@ -63,7 +63,7 @@ def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):
     # Parallelize
     if n_workers > 1:
         if settings.os == 'linux':
-            vectorized = SubprocVecEnv(envs, start_method='forkserver')
+            vectorized = SubprocVecEnv(envs, start_method='fork')
         elif settings.os == 'win32':
             vectorized = SubprocVecEnv(envs, start_method='spawn')
     else:
@@ -98,7 +98,7 @@ def get_parameters(env_name, model_path=None, config_name=None, config_location=
 
     with open(path, 'r') as f:
         config = yaml.load(f)
-    print('\nLoaded config file from: {}\n'.format(path))
+    # print('\nLoaded config file from: {}\n'.format(path))
 
     # Parse some of the config for saving later
     main = config['main']
@@ -108,6 +108,7 @@ def get_parameters(env_name, model_path=None, config_name=None, config_location=
     return config
 
 class SBWrapper(object):
+    
     """
     Wrapper for stable_baselines library
     """
@@ -126,7 +127,8 @@ class SBWrapper(object):
         
         self._env_path = os.path.join(settings.TRAINED_MODELS, self._env_type, env, subdir)
         self._model_path = None
-        print('Loading path {}'.format(self._env_path))
+        self.target = None
+        # print('Loading path {}'.format(self._env_path))
 
         self.setup()
 
@@ -154,7 +156,7 @@ class SBWrapper(object):
                         model_path = folder
                         if not os.path.isfile(os.path.join(model_path, 'model.pkl')):
                             model_path = model_path[:-1] + '1'
-                        print('Model path:', model_path)
+                        # print('Model path:', model_path)
                         break
                 if path is not None:
                     if folder.split(settings.delimiter)[-1] == path:
@@ -173,7 +175,7 @@ class SBWrapper(object):
         self.create_env()
         self.model = model_object.load(model_file[:-4], env=self.env, tensorboard_log=self._env_path)
         self.reloaded = True
-        print('Loading file {}'.format(model_file))
+        # print('Loading file {}'.format(model_file))
 
         return self
 
@@ -197,7 +199,7 @@ class SBWrapper(object):
         policy_params = c['policy']
         model_name = c['main']['model']
         model_params = c['model']
-        print('\nCreating {} model...'.format(model_name))
+        # print('\nCreating {} model...'.format(model_name))
 
         self.policy = self._get_policy(policy_name)
         model_object = getattr(stable_baselines, model_name)
@@ -241,10 +243,8 @@ class SBWrapper(object):
         Parses the environment to correctly return the attributes based on the spec and type
         Creates a corresponding vectorized environment
         """
-        print('Creating {} Environment...\n'.format(self.env_name))
+        # print('Creating {} Environment...\n'.format(self.env_name))
 
-        if self.config['main']['model'] == 'PPO1': self.config['main']['n_workers'] = 1
-        # else: n_workers = self.config['main']['n_workers']
         self.env = create_env(self.env_name, self.config)
         testconf = copy.deepcopy(self.config)
         testconf['environment']['meta_learning'] = False
@@ -274,10 +274,9 @@ class SBWrapper(object):
         except:
             num = 0
 
-
         c = self.config['main']
         ce = self.config['environment']
-        dir_name = "{}_{}_SL{}_SC{}_{}_1".format(c['model'], c['n_workers'], str(100), ce['seq_count'], self.date) # Unique stamp
+        dir_name = "{}_{}_buffer{}_Vienna{}_{}_1".format(c['model'], c['n_workers'], ce['buffer_size'], ce['vienna_params'], self.date) # Unique stamp
         self._unique = str(num + 1) + '_' + dir_name # Unique identifier of this model
         self._model_path = os.path.join(self._env_path, self._unique) # trained_models/env_type/env/trainID_uniquestamp
 
@@ -392,6 +391,7 @@ class SBWrapper(object):
         self.model.set_env(env)
         target = env.get_attr('target_structure')[0]
         if show:
+            import imgkit
             driver = create_browser('double')
             show_rna(target.seq, 'AUAUAU', driver, 0)
         
@@ -402,11 +402,13 @@ class SBWrapper(object):
         target = self.model.env.get_attr('target_structure')[0]
         print('\nTarget length: {}, Unpaired nucleotides: {:.1f}%, structural motifs: {}'.format(target.len, target.db_ratio*100, target.counter),'\n', '='*120)
         try:
+            num=0
             for _ in solution_progress:
                 attempts_progress = tqdm(range(budget), ncols=90, position=1, leave=False, initial=1)
                 attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(0,budget, '   '))
                 
                 for attempt in attempts_progress:
+                    num += 1
                     self.test_state = self.model.env.reset()
                     self.done = [False]
                     end = False
@@ -426,12 +428,78 @@ class SBWrapper(object):
                         failed_solutions.append(solution)
                     attempts_progress.set_description('  Attempt: {:4}/{:4}  HD: {:3}  '.format(attempt+1,budget, solution.hd))
                     solution_progress.set_description('Solutions: {:4}/{:4}           '.format(len(valid_solutions), solution_count))
-                    if show: show_rna(solution.folded_design, solution.string, driver, 1)
+                    if show: 
+                        show_rna(solution.folded_design, solution.string, driver, 1)
+                        # out = os.path.join(settings.RESULTS, 'images', '{}.jpg'.format(num))
+                        # imgkit.from_file(os.path.join(settings.MAIN_DIR, 'display','double.html'), out)
                     if end: break
+
                 
         except KeyboardInterrupt:
             print('Stopped...')
         return valid_solutions, failed_solutions
+
+    def prep(self, target, permute=True, verbose=False):
+        """
+        Prepare the model and env for solving a single sequence
+        """
+        # env = self.test_env
+        self.target = target
+        target = Sequence(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
+        data = Dataset(sequences=[target])
+        self.model.env.set_attr('dataset', data)
+        self.model.env.set_attr('meta_learning', True)
+        self.model.env.set_attr('randomize', False)
+        self.model.env.set_attr('permute', permute)
+        self.model.env.set_attr('ep', 0)
+        self.env.set_attr('dataset', data)
+        self.env.set_attr('meta_learning', True)
+        self.env.set_attr('randomize', False)
+        self.env.set_attr('permute', permute)
+        self.env.set_attr('ep', 0)
+        if verbose==0: self.model.env.set_attr('verbose', False)
+        
+        data_fns = self.model.env.get_attr('set_data')
+        for fn in data_fns:
+            fn(data)
+        nts = self.env.get_attr('next_target_structure')
+        for nt in nts:
+            nt()
+        #     print(self.model.env.get_attr('dataset'))
+        # # self.model.set_env(env)
+
+    def single_fold(self):
+        """
+        Perform a single run on the target
+        """
+        
+        self.test_state = self.model.env.reset()
+        self.done = [False]
+
+        while not self.done[0]:
+            action, _ = self.model.predict(self.test_state)
+            self.test_state, _, self.done, _ = self.model.env.step(action)
+
+        solution = self.model.env.get_attr('prev_solution')
+        
+        return solution
+
+
+    def msingle_fold(self):
+        """
+        Perform a single run on the target
+        """
+        
+        self.test_state = self.model.env.reset()
+        self.done = [False]
+
+        while not self.done[0]:
+            action, _ = self.model.predict(self.test_state)
+            self.test_state, _, self.done, _ = self.model.env.step(action)
+
+        solutions = self.model.env.get_attr('solution')
+        
+        return solutions
 
         
     def multi_fold(self, target, solution_count=1, budget=50, permute=True, show=False, verbose=False):

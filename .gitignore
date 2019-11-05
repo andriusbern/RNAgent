@@ -1,14 +1,14 @@
 rlfold/trained_models
-rlfold/data/rfam_learn_train
+rlfold/data
 rlfold/analysis
 rlfold/notes.md
 rlfold/results/
 venv/
 trained_models/
 rlfold/mcts.py
-geckodriver.log
+geckodriver*/
 # rlfold/interface
-
+comparison/
 rlfold.egg-info
 .vscode
 

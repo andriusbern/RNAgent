@@ -1,13 +1,19 @@
+import os, sys, argparse, time, re
+# sys.path.append('/home/andrius/thesis/ViennaRNA/learna/thirdparty/miniconda/miniconda/pkgs/viennarna-2.4.8-py36hd28b015_2/lib/python3.6/site-packages')
+try:
+    sys.path.remove('/usr/local/lib/python3.6/site-packages')
+except:
+    pass
 from rlfold.definitions import Dataset
 from rlfold.baselines import SBWrapper, get_parameters
 import rlfold.environments
-import os, sys, argparse, time, re
 import rlfold.settings as settings
 from rlfold.definitions import colorize_nucleotides, highlight_mismatches
 import numpy as np
 
+
 import RNA
-RNA.cvar.uniq_ML = 1
+# RNA.cvar.uniq_ML = 1
 header = '\n' + '='*120 + '\n'
 
 param_files = {
@@ -16,7 +22,6 @@ param_files = {
     3: 'rna_andronescu2007.par',
     4: 'rna_langdon2018.par',
 }
-
 
 def set_vienna_params(param):
     params = os.path.join(settings.MAIN_DIR, 'utils', param_files[param])
@@ -28,11 +33,6 @@ def sort_by_free_energy(designs):
     return [designs[i] for i in FE]
 
 
-def sort_by_hd(designs):
-    HD = np.argsort([design.hd for design in designs])
-    return [designs[i] for i in HD]
-
-
 def sort_by_attribute(designs, attribute):
     attr = np.argsort([getattr(design, attribute) for design in designs])
     return [designs[i] for i in attr]
@@ -40,17 +40,26 @@ def sort_by_attribute(designs, attribute):
 
 def solution_summary(designs, hd=False):
     t, _ = highlight_mismatches(designs[0].target.seq, designs[0].target.seq)
-    ruler = '    ' + ''.join(['{:3}  '.format(i) for i in range(0, len(designs[0].target.seq), 5)])
-    target = '  T: {}'.format(t)
+    ruler = '         ' + ''.join(['{:3}  '.format(i) for i in range(0, len(designs[0].target.seq), 5)])
+    target = '  Target: {}'.format(t)
     for i, design in enumerate(designs):
         if i % 10 == 0:
             print(ruler, '\n', target)
         gcau = design.gcau_content()
-        content = '  ||  G:{:.2f} | C:{:.2f} | A:{:.2f} | U:{:.2f} |'.format(
+        content = '  ||  p: {:.2f} | PF:{:.2f} | CE:{:.2f} | CD:{:.2f} | MEAE:{:.2f} | MEA:{:.2f} | ED:{:.2f}'.format(
+            design.probability,
+            design.partition_fn,
+            design.centroid_en, 
+            design.centroid_dist,
+            design.MEA_en,
+            design.MEA,
+            design.ensemble_diversity
+        )
+        content += '  ||  G:{:.2f} | C:{:.2f} | A:{:.2f} | U:{:.2f} |'.format(
             gcau['G'], gcau['C'], gcau['A'], gcau['U'])
         if hd:
             content += ' HD: {:2}'.format(design.hd)
-        print('{:4}: {}   FE: {:.3f}'.format(
+        print('Seq #{:4}: {}   FE: {:.3f}'.format(
             i+1, colorize_nucleotides(design.string), design.fe) + content)
 
 
@@ -78,13 +87,26 @@ def mismatch_summary(designs):
         print('    : {}'.format(colorize_nucleotides(design.string)))
 
 
+def legend():
+    legend = """
+    Legend:
+        - FE:   Free energy of the nucleotide sequence.
+        - p:    Probability of the structure within the ensemble
+        - PF:   Partition function free energy.
+        - CE:   Free energy of the centroid of the ensemble.
+        - CD:   Distance from the structure of the sequence to the centroid of the ensemble.
+        - ED:   Ensemble diversity.
+        - GCAU: Percentages of each nucleotide within the sequence.
+    """
+    return legend
+
 def config_summary(args):
     print(
         header,
         '\nConfiguration: \n',
         'Number of solutions:      %i\n' % args.num_solutions,
         'Attempts per solution:    %i\n' % args.attempts,
-        'Model:                    %s\n' % model_dict[args.model],
+        'Model:                    %s\n' % settings.model_dict[args.model],
         'Show structure:           %r\n' % args.show,
         'Display failed sequences: %r\n' % args.failed,
         'Permute:                  %r\n' % args.permute,
@@ -124,14 +146,16 @@ def fold(model, args):
 
     unique = find_unique(valid)
     t = time.time() - t0
+    mult = 6 if args.multi else 1
     attempts = model.model.env.get_attr('ep')[0]
-    print(header, 'Solutions found: {}, unique: {}, time taken: {:.2f}s, total attempts: {}, t/s: {:.2f}, a/s: {:.2f}\n'.format(
+    print(header, 'Solutions found: {}, unique: {}, time taken: {:.2f}s, total attempts: {}, solutions/s: {:.2f}, attempts/s: {:.2f}\n'.format(
         len(valid),
         len(unique),
         t,
-        attempts,
+        attempts*mult,
         len(valid)/t,
-        attempts/t))
+        attempts*mult/t))
+
 
     # Summaries
     if len(unique) > 0:
@@ -139,8 +163,9 @@ def fold(model, args):
         solution_summary(valid_designs)
     if args.failed and len(failed) > 0:
         print(header, '\nFailed solutions')
-        failed_designs = sort_by_hd(failed)
+        failed_designs = sort_by_attribute(failed, 'hd')
         mismatch_summary(failed_designs)
+    print(legend())
     input()
 
 
@@ -166,7 +191,7 @@ if __name__ == "__main__":
     parser.print_help()
     
     model_dict = {
-        '0': ['experiment4', 2, ''], # Best fo sho, low U
+        '0': ['experiment4', 2, '8'], # Best fo sho, low U
         '1': ['t238', 1, '10'], # 
         '2': ['e238', 2, '11'],
         '3': ['experiment5', 1, '12'],
@@ -180,7 +205,7 @@ if __name__ == "__main__":
         '10': ['experiment6', 2, '19'],
         }
 
-    params = model_dict[args.model]
+    params = settings.model_dict[args.model]
     trained_model = load_model(*params)
 
     try:
@@ -210,15 +235,13 @@ if __name__ == "__main__":
                     print('\nSequence: ' + nucleotides)
                     break
 
-
-
                 elif target.startswith('n'):
                     args.num_solutions = int(target[1:])
                 elif target.startswith('a'):
                     args.attempts = int(target[1:])
                 elif target.startswith('m'):
                     args.model = str(target[1:])
-                    params = model_dict[args.model]
+                    params = settings.model_dict[args.model]
                     trained_model = load_model(*params)
                 elif target.startswith('s'):
                     args.show = not args.show

@@ -1,22 +1,20 @@
 main:
   model: PPO2
-  policy: CustomMlpPolicy
-  n_workers: 8
+  policy: CustomCnnPolicy
+  n_workers: 4
   n_steps: 80000000
-  multi_discrete: false
-  frame_stack: 0
   seed: 1
 models:
   PPO2:
     gamma: 1
     n_steps: 1024
-    ent_coef: 0.01
+    ent_coef: 0.005
     learning_rate: 0.0005
     vf_coef: 0.5
     max_grad_norm: 0.5
-    lam: 0.98
-    nminibatches: 16
-    noptepochs: 4
+    lam: 0.95
+    nminibatches: 8
+    noptepochs: 2
     cliprange: 0.15
     full_tensorboard_log: false
     verbose: 0
@@ -26,22 +24,26 @@ policies:
   CnnLnLstmPolicy: {}
   CustomCnnPolicy:
     filters:
-      - 512
+      - 64
+      - 256
       - 128
       - 16
     kernel_size:
       - - 10
-        - 15
+        - 1
       - - 1
-        - 10
+        - 5
+      - - 1
+        - 5
       - - 1
         - 5
     stride:
       - 1
       - 1
       - 1
-    lstm: []
+      - 1
     shared:
+      - 256
       - 256
       - 128
     h_actor:
@@ -102,6 +104,12 @@ environment:
   full_state: true
   kernel_size: 25
 
+  # Ranked rewards
+  enable_ranked: true
+  buffer_size: 10
+  reward_percentile: 0.75
+  vienna_params: 2 # 1: Turner 2004, 2: Turner 1999, 3: Andronescu 2007, 4: Langdon 2014
+
   # Permutations
   permute: false
   permutation_budget: 50
@@ -112,19 +120,14 @@ environment:
 
   # Reward
   detailed_comparison: true
-  reward_exp: 9
+  reward_exp: 1
   write_threshold: 0
 
   # Data
   meta_learning: true
-  seq_count: 500
   randomize: true
   exact_seq_length: true
-  test_set: false
-  seq_len:
-    - 55
-    - 120
 
 testing:
-  evaluate_every: 25000000
+  evaluate_every: 1000000
   test_timeout: 60

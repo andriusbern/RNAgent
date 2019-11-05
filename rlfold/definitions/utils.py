@@ -1,10 +1,10 @@
 import numpy as np
 import rlfold.settings as settings
 import os, random
-import matplotlib.pyplot as plt
 import copy, datetime, yaml
+import rlfold
+import sys, subprocess, time
 from .sequence import Sequence
-
 
 def hamming_distance(seq1, seq2):
     """
@@ -25,6 +25,18 @@ def colorize_nucleotides(sequence):
                'G':'\033[2;30;41mG\033[0m',
                'C':'\033[2;30;45mC\033[0m',
                '-':'\033[2;37;40m-\033[0m'}    
+    return ''.join([mapping[x] for x in sequence])
+
+def colorize_motifs(sequence):
+    """
+    Color coding for the console output for nucleotide sequences
+    """
+    mapping = {'M':'\033[2;30;42mA\033[0m',
+               'H':'\033[2;30;46mU\033[0m',
+               'I':'\033[2;30;41mG\033[0m',
+               'O':'\033[2;30;45mC\033[0m',
+               'C':'\033[2;37;43m-\033[0m',
+               'E':'\033[2;37;47m-\033[0m'}
     return ''.join([mapping[x] for x in sequence])
 
 def highlight_mismatches(seq1, seq2):

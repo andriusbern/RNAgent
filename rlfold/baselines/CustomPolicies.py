@@ -58,7 +58,7 @@ def custom_cnn(scaled_images, params, **kwargs):
     out = activ(conv(scaled_images, 'c0', n_filters=s.filters[0], filter_size=s.kernel_size[0], stride=s.stride[0], init_scale=init_scale, one_dim_bias=odb, **kwargs))
     # Following layers
     for i, layer in enumerate(s.filters[1:]):
-        out = activ(conv(out, 'c{}'.format(i+1), n_filters=layer, filter_size=s.kernel_size[i+1], stride=s.stride[i+1], init_scale=init_scale, one_dim_bias=odb, **kwargs))
+        out = activ(conv(out, 'c{}'.format(i+1), n_filters=layer, filter_size=s.kernel_size[i+1], stride=s.stride[i+1], one_dim_bias=odb, **kwargs))#, init_scale=initinit_scale, 
 
     out = conv_to_fc(out)
     return out
@@ -82,18 +82,18 @@ class CustomCnnPolicy(ActorCriticPolicy):
             # Shared layers
             shared = flattened
             for i, layer in enumerate(params.shared):
-                shared = activ(tf.layers.dense(shared, layer, name='fc_shared'+str(i), kernel_initializer=initializer))
+                shared = activ(tf.layers.dense(shared, layer, name='fc_shared'+str(i)))#, kernel_initializer=initializer)
 
             # Policy net
             pi_h = shared
             for i, layer in enumerate(params.h_actor):
-                pi_h = activ(tf.layers.dense(pi_h, layer, name='pi_fc'+str(i), kernel_initializer=initializer))
+                pi_h = activ(tf.layers.dense(pi_h, layer, name='pi_fc'+str(i)))#, kernel_initializer=initializer)
             pi_latent = pi_h
 
             # Value net
             vf_h = shared
             for i, layer in enumerate(params.h_critic):
-                vf_h = activ(tf.layers.dense(vf_h, layer, name='vf_fc'+str(i), kernel_initializer=initializer))
+                vf_h = activ(tf.layers.dense(vf_h, layer, name='vf_fc'+str(i)))#, kernel_initializer=initializer)
             value_fn = tf.layers.dense(vf_h, 1, name='vf')
             vf_latent = vf_h
 

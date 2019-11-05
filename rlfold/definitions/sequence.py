@@ -11,7 +11,6 @@ class Sequence(object):
     def __init__(self, sequence, file_id=None, file_nr=None, encoding_type=0, graph_based=False):
         self.seq = sequence
         self.len = len(sequence)
-        # self.bin = self.to_binary()
         self.db_ratio = float(sum([1 if x == '.' else 0 for x in self.seq])) / self.len
         self.loops = self._count_loops()
         self.n_loops = len(self.loops)
@@ -21,12 +20,6 @@ class Sequence(object):
         self.structure_encoding = self.to_matrix()
         self.file_id = file_id
         self.file_nr = file_nr
-
-        # if graph_based:
-        # self.graph = forgi.graph.bulge_graph.BulgeGraph.from_dotbracket(self.seq, dissolve_length_one_stems=False)
-            # self.element_dict = self.get_graph()
-            # self.primary, self.secondary, self.graph_markers = self.create_strands(self.element_dict)
-            # self.graph_based_encoding = self.get_graph_based_encoding()
         
     def __repr__(self):
         return self.seq
@@ -280,6 +273,70 @@ class Sequence(object):
 
         return strand_dict
 
+
+    def boost(self):
+
+        # Internal
+        bg, = forgi.load_rna(self.target.seq)
+        for i in bg.hloop_iterator():
+            dims = bg.get_node_dimensions([i])
+            indices = bg.elements_to_nucleotides(i)
+            strand1 = indices[:dims[0]]
+            strand2 = indices[-dims[1]:]
+
+            if dims[1] > dims[0]:
+                strand1, strand2 = strand2, strand1
+            dims = (max(dims), min(dims))
+
+            if dims == (1, 1):
+                self.str[strand1[0]-1] = 'U' # G
+                self.str[strand2[-1]-1] = 'U' # A
+
+            if dims == (2, 1):
+                self.str[strand1[0]-1], self.str[strand1[1]-1] = 'U', 'C' # G, C / G, A
+                self.str[strand2[0]-1] = 'U' # A / G
+
+            if dims == (2, 2):
+                self.str[strand1[0]-1], self.str[strand1[1]-1] = 'U', 'G'
+                self.str[strand2[0]-1], self.str[strand2[1]-1] = 'U', 'G'
+
+            if (dims[0] > 2 and dims[1] > 2) and (dims[0] >= 3 or dims[1] >= 3):
+                self.str[strand1[0]-1], self.str[strand1[1]-1] = 'G', 'G'
+                self.str[strand2[0]-1], self.str[strand2[1]-1] = 'A', 'A'
+    
+        # Hairpins
+        for i in bg.hloop_iterator():
+            dims = bg.get_node_dimensions([i])
+            indices = bg.elements_to_nucleotides(i)
+            strand1 = indices[:dims[0]]
+            
+            self.str[strand1[0]-1] = 'G'
+            self.str[strand1[-1]-1] = 'A'
+
+        # Close stems with GC/CG
+        for s in bg.stem_iterator():
+            dims = bg.get_node_dimensions([i])
+            indices = bg.elements_to_nucleotides(i)
+            strand1 = indices[:dims[0]]
+            strand2 = indices[-dims[1]:]
+
+            pair = ('G', 'C') if random.random() > 0.99 else ('C', 'G')
+            self.str[strand1[0]-1], self.str[strand1[1]-1] = pair
+            self.str[strand2[0]-1], self.str[strand2[1]-1] = pair
+            
+        for m in list(bg.mloop_iterator())[1:-2]:
+            dims = bg.get_node_dimensions([i])
+            indices = bg.elements_to_nucleotides(i)
+            strand1 = indices[:dims[0]]
+            if len(strand1) > 1:
+                self.str[strand1[0]-1], self.str[strand1[1]-1] = 'C', 'A'
+
+            # strand2 = indices[-dims[1]:]
+
+        
+        
+
+
     def create_strands(self, dic):
         """
         
@@ -339,10 +396,6 @@ class Sequence(object):
             except:
                 pass
         connected += [element]
-
-        # for element in connected:
-        #     if element[0] == 'm' and self.graph.get_length(element) == 0:
-        #         connected += self.graph.connections(element)
 
         nucleotides = self.graph.elements_to_nucleotides(connected)
         nx_graph = self.graph.to_networkx()

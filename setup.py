@@ -2,7 +2,7 @@ from setuptools import setup
 import time, os
 
 packages = ['numpy',        
-            'tensorflow',   # ML,
+            'tensorflow==1.4.0',   # ML,
             'gym',
             'sklearn',
             'opencv-python',# Image processing

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+    <meta charset="utf-8">
+    <title>Fornac Example</title>
+</head>
+
+<body>Target:
+    <div id="custom_colors"></div>
+    <script src="scripts/fornac.js"></script>
+    <script type="text/javascript">
+        "use strict"
+
+        function customColorsContainer() {
+            let container = new fornac.FornaContainer("#custom_colors", {
+                'applyForce': false,
+                'allowPanningAndZooming': true,
+                'initialSize': [400, 400]
+            });
+
+            let options = {
+                'structure': '((((.((((.(((....))).(((....))).(((....))).(((....))).(((....))).(((....))).)))).(((((......)))))(((....)))))))',
+                // 'sequence': 'AUAUAU'
+            };
+            container.addRNA(options.structure, options);
+            container.setSize();
+
+            // container.addCustomColorsText('1:red         9:#ff7f0e 10:#ff7f0e 11:#ff7f0e 12:#aec7e8');
+        }
+
+        customColorsContainer();
+    </script>
+</body>
+
+</html>
