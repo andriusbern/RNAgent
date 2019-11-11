@@ -1,0 +1,7 @@
+name: rlif2
+channels:
+  - bioconda
+dependencies:
+  - python=3.7.3
+  - pip=19.3.1=py37_0
+  - viennarna=2.4.14

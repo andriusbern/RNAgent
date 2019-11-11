@@ -1,17 +1,21 @@
-rlfold/trained_models
-rlfold/data
-rlfold/analysis
-rlfold/notes.md
-rlfold/results/
+rlif/trained_models
+# rlif/data
+# !rlif/data/*
+rlif/data/rfam_train
+
+
+rlif/analysis
+rlif/notes.md
+rlif/results/
 venv/
 trained_models/
-rlfold/mcts.py
+rlif/mcts.py
 geckodriver*/
-# rlfold/interface
+# rlif/interface
 comparison/
-rlfold.egg-info
+rlif.egg-info
 .vscode
-
+comparison/
 **/__pycache__/**
 
 # Byte-compiled / optimized / DLL files

@@ -1,0 +1,13 @@
+environment:
+  # Permutations
+  permute: True
+  permutation_budget: 15
+  permutation_radius: 5
+  permutation_threshold: 15
+  allow_gu_permutations: true
+  mutation_probability: 0.5
+
+  # Data
+  meta_learning: false
+  randomize: false
+  verbose: false

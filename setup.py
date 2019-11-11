@@ -1,33 +1,28 @@
 from setuptools import setup
-import time, os
 
-packages = ['numpy',        
-            'tensorflow==1.4.0',   # ML,
-            'gym',
-            'sklearn',
-            'opencv-python',# Image processing
-            'matplotlib',   # Visualization
-            # 'python-qt',
-            # 'PyQt5',         
-            # 'pyqtgraph',
-            'stable_baselines',
-            'pyyaml',
-            'forgi',
-            'selenium',
-            'tqdm'
-            ]
+packages = [
+    'numpy==1.17.1',        
+    'tensorflow==1.13.1',   
+    'stable-baselines==2.7.0',
+    'gym',
+    'forgi',
+    'matplotlib',
+    'PyQt5',
+    'pyqtgraph',
+    'tqdm',
+    'pyyaml==3.13']
+
 setup(
-    name='rlfold',
+    name='rlif',
     description='Inverse RNA folding with reinforcement learning.',
     long_description='',
     version='0.2',
-    packages=['rlfold'],
+    packages=['rlif'],
     scripts=[],
     author='Andrius Bernatavicius',
     author_email='andrius.bernatavicius@gmail.com',
     url='none',
     download_url='none',
-    install_requires=packages
-)
+    install_requires=packages)
 
-print ("Installation complete.\n")
+print("Installation complete.\n")
