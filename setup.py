@@ -10,7 +10,7 @@ packages = [
     'PyQt5',
     'pyqtgraph',
     'tqdm',
-    'pyyaml==3.13']
+    'pyyaml==5.1']
 
 setup(
     name='rlif',
