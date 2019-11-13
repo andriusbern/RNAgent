@@ -1,6 +1,6 @@
 # RLIF
 
-<img src="assets/interface.png" width="600"> 
+<img src="assets/interface2.png" width="600"> 
 
 This package contains:
 1. A reinforcement learning based algorithm for RNA inverse folding.
