@@ -1,7 +1,6 @@
 import numpy as np
 import forgi, math
 import matplotlib.pyplot as plt
-from rlif.utils import create_browser, show_rna
 
 class DotBracket(object):
     """
@@ -14,6 +13,8 @@ class DotBracket(object):
         self.file_id = file_id
         self.seq = sequence
         self.len = len(sequence)
+        self.nucleotides = None
+        self.name = ''
 
         # Parse
         self.loops = self._count_loops()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from rlif.rna import load_length_metadata, load_sequence
 from rlif.rna import DotBracket
 from rlif.settings import ConfigManager as settings
-from rlif.utils import show_rna, create_browser
+# from rlif.utils import show_rna, create_browser
 
 class Dataset(object):
     def __init__(

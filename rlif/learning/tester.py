@@ -1,5 +1,5 @@
 from rlif.rna import Dataset
-from rlif.utils import show_rna, create_browser
+# from rlif.utils import show_rna, create_browser
 import os, datetime, sys, time
 from rlif.settings import ConfigManager as settings
 import numpy as np
@@ -21,11 +21,11 @@ class Tester(object):
         self.test_state = None
         self.done = None
 
-    def evaluate(self, time_limit=60, verbose=False, permute=False, show=False, pause=0):
+    def evaluate(self, time_limit=60, verbose=False, permute=True, show=False, pause=0):
         """
         Run evaluation on test sets and save the model solution checkpoint
         """
-        datasets = ['rfam_learn_test', 'rfam_taneda', 'rfam_learn_validation', 'eterna']
+        datasets = ['rfam_runge', 'rfam_modena', 'eterna']
         results = [None for dataset in datasets]
 
         for i, dataset in enumerate(datasets):
@@ -40,7 +40,7 @@ class Tester(object):
         path = os.path.join(settings.RESULTS, 'training_tests.csv')
         self.write_csv(results, path, desc, time_limit)
 
-    def timed_evaluation(self, dataset='rfam_learn_test', time_limit=60, permute=False, show=False, pause=0, verbose=True):
+    def timed_evaluation(self, dataset='rfam_runge', time_limit=60, permute=False, show=False, pause=0, verbose=True):
         """
         Run timed test on a benchmark dataset
 
@@ -48,11 +48,10 @@ class Tester(object):
         """
         model = self.wrapper.model
 
-
         # Set a single threaded environment for testing
         model.set_env(self.wrapper.test_env)
 
-        n_seqs=29 if dataset=='rfam_taneda' else 100
+        n_seqs=29 if dataset=='rfam_modena' else 100
         
         test_set = Dataset(
             dataset=dataset, 
@@ -148,6 +147,7 @@ class Tester(object):
         config = self.wrapper.config['environment']
         if not os.path.isdir(directory): os.makedirs(directory)
         filename = os.path.join(directory, '{}_{}.log'.format(date, len(results)))
+        print('Writing log to {}'.format(filename))
         with open(filename, 'w') as f:
 
             msg  = 'Dataset: {}, date: {}, solved {}/{} sequences with {}s eval budget.\n'.format(

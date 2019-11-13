@@ -21,20 +21,12 @@ class RLIF(object):
         """
         Initializes the models
         """
-        # trainers = [
-        #     Trainer('RnaDesign', 'experiment4').load_model(2, checkpoint='8', model_only=True)]
-            # Trainer('RnaDesign', 'experiment4').load_model(2, checkpoint='8', model_only=True),
-            # Trainer('RnaDesign', 'experiment4').load_model(1, checkpoint='10', model_only=True),
-            # Trainer('RnaDesign', 'experiment4').load_model(1, checkpoint='10', model_only=True),
-            # Trainer('RnaDesign', 'experiment5').load_model(1, checkpoint='9', model_only=True)]
-            # Trainer('RnaDesign', 'experiment5').load_model(1, checkpoint='9', model_only=True),
-            # Trainer('RnaDesign', 'experiment4').load_model(2, checkpoint='12', model_only=True)]
         trainers = [Trainer().load_model(2, checkpoint='8', n_envs=1, model_only=True),
                     Trainer().load_model(2, checkpoint='8', n_envs=1, model_only=True),
-                    # Trainer().load_model(1, checkpoint='10', n_envs=1, model_only=True),
-                    # Trainer().load_model(1, checkpoint='10', n_envs=1, model_only=True),
-                    Trainer().load_model(3, checkpoint='9', n_envs=1, model_only=True),
+                    # Trainer().load_model(3, checkpoint='9', n_envs=1, model_only=True),
                     Trainer().load_model(3, checkpoint='9', n_envs=1, model_only=True)]
+                    # Trainer().load_model(1, checkpoint='10', n_envs=1, model_only=True),
+                    # Trainer().load_model(1, checkpoint='10', n_envs=1, model_only=True),
                     # Trainer().load_model(1, checkpoint='12', n_envs=1, model_only=True)]
                     # Trainer().load_model(4, checkpoint='9', n_envs=1, model_only=True),
                     # Trainer().load_model(5, checkpoint='11', n_envs=1, model_only=True)]
@@ -44,9 +36,7 @@ class RLIF(object):
 
         self.models = [trainer.model for trainer in trainers]
         self.envs = [RnaDesign({**t.config['environment'], **test_config}) for t in trainers]
-        # self.envs = [trainer.env for trainer in trainers]
         self.envs[0].boosting, self.envs[0].config['boosting'] = True, True
-        # self.envs[2].boosting, self.envs[2].config['boosting'] = True, True
     
     def initialize2(self):
         """
@@ -63,7 +53,6 @@ class RLIF(object):
 
         self.models = [trainer.model for trainer in trainers]
         self.envs = [RnaDesign({**t.config['environment'], **test_config}) for t in trainers]
-        # self.envs = [trainer.env for trainer in trainers]
         self.envs[0].boosting, self.envs[0].config['boosting'] = True, True
         # self.envs[2].boosting, self.envs[2].config['boosting'] = True, True
         
@@ -129,6 +118,22 @@ class RLIF(object):
             action = model.predict(state)[0]
             state, _, done, _ = env.step(action)
         return env.solution
+
+    def prep(self, sequence):
+        for env in self.envs:
+            env.set_sequence(sequence)
+
+    def single_step(self, sequence=None):
+        
+        # index = random.randint(0, len(self.envs)-1)
+        env = self.envs[0]
+        model = self.models[0]
+        state = env.solution.get_state()
+        # while not done:
+        action = model.predict(state)[0]
+        state, _, done, _ = env.step(action)
+        # return env.solution
+        return env.solution, done
 
     def prep(self, sequence):
         for env in self.envs:

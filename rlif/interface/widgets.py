@@ -19,8 +19,8 @@ from rlif.settings import ConfigManager as config
 
 import RNA, forgi
 param_files = [
-    'rna_turner2004.par',
     'rna_turner1999.par',
+    'rna_turner2004.par',
     'rna_andronescu2007.par',
     'rna_langdon2018.par']
 
@@ -91,14 +91,19 @@ class MainWidget(QWidget):
         self.sequences = []
         self.solutions = []
         self.failed = []
+        self.targets = []
         self.dataset = 'eterna'
         self.create_layout()
-
+        self.testing = False
+        self.current_target = 0
         self.running = False
+
         self.threadpool = QThreadPool()
         self.model = RLIF()
         self.fold_thread = Worker(self.model.single_run)
         self.fold_thread.signals.result.connect(self.process_output)
+        self.step_thread = Worker(self.model.single_step)
+        self.step_thread.signals.result.connect(self.process_step)
 
         self.vfold_thread = Worker(self.vff)
         self.vfold_thread.signals.result.connect(self.process_output)
@@ -114,33 +119,41 @@ class MainWidget(QWidget):
         for row in reversed(range(self.failed_table.rowCount())):
             self.failed_table.removeRow(row)
         self.failed_table.clear()
+        for row in reversed(range(self.targets_table.rowCount())):
+            self.targets_table.removeRow(row)
 
         self.total_iter = 0
         self.start = 0
         self.sequences = []
         self.solutions = []
         self.failed = []
+        self.targets = []
+        self.update_progress()
+        self.target = None
+        self.nucleotides = None
 
     def create_layout(self, redo=False):
 
         self.sequence_input = QLineEdit(self)
-        self.sequence_input.setMinimumWidth(800)
+        self.sequence_input.setMinimumWidth(1000)
         self.sequence_input.setPlaceholderText('Enter a nucleotide sequence (A/C/G/U) or a secondary RNA structure in dot-bracket format.')
         self.sequence_input.textChanged.connect(self.parse_input)
         self.sequence_input.returnPressed.connect(self.update_statistics)
 
         # Progress
-        prlayout = QVBoxLayout()
         self.progress_view = QWidget()
+        prlayout = QGridLayout(self.progress_view)
         self.progress_bar = QProgressBar()
         self.progress_display = QTextEdit(self)
         self.progress_display.setText('Progress:')
+        self.targets_table = TargetTable('Targets', self, None)
+        self.targets_table.setFixedWidth(200)
         # self.pd = QTextEdit(self)
         # self.pd.setText('Idle.')
         self.progress_display.setEnabled(False)
-        prlayout.addWidget(self.progress_display)
-        prlayout.addWidget(self.progress_bar)
-        self.progress_view.setLayout(prlayout)
+        prlayout.addWidget(self.progress_display, 1, 1, 1, 1)
+        prlayout.addWidget(self.progress_bar, 2, 1, 1, 1)
+        self.progress_view.setFixedHeight(200)
         
         # Sequence display
         self.img_tabs = QTabWidget()
@@ -158,6 +171,9 @@ class MainWidget(QWidget):
         self.target_statistics = QTextEdit(self)
         self.target_statistics.setText('Target Statistics:')
         self.target_statistics.setFixedHeight(150)
+        self.sequence_statistics = QTextEdit(self)
+        # self.sequence_statistics.setText()
+        self.sequence_statistics.setFixedHeight(150)
                 
         # Valid solution tab
         self.results_table = SolutionTable('None', self, None)
@@ -166,7 +182,7 @@ class MainWidget(QWidget):
         vallay = QVBoxLayout(self.valid_view)
         vallay.addWidget(self.solution_viz)
         vallay.addWidget(self.results_table)
-        self.results_table.setMinimumHeight(150)
+        self.results_table.setMinimumHeight(225)
 
         # Failed solution tab
         self.failed_viz = FailedWidget('Failed Solutions', self, None)
@@ -186,8 +202,9 @@ class MainWidget(QWidget):
         self.tabs.setTabText(1, 'Failed solutions')
 
         # Buttons
-        self.fold_button  = ToggleButton(self, ['Run', 'Stop'], 'loop', ['Generate nucleotide sequences.', 'Stop.'])
+        self.fold_button  = ToggleButton(self, ['Run', 'Stop'], 'loop', ['Run RLIF to generate nucleotide sequences for the target structure.', 'Stop.'])
         self.vfold_button = ToggleButton(self, ['RNAinverse', 'Stop'], 'vloop', ['Use RNAinverse.', 'Stop.'])
+        self.test_button = ToggleButton(self, ['Test', 'Stop'], 'test', ['Run RLIF one nucleotide at a time.', 'Stop.'])
         self.load_button  = ClickButton(self, 'Load', [self.load_seqs], status='Load log files.')
         self.save_button  = ClickButton(self, 'Save', [self.save_seqs], status='Save solutions.')
         self.clear_button = ClickButton(self, 'Clear', [self.clear_all], status='Clear all solutions.')
@@ -198,20 +215,20 @@ class MainWidget(QWidget):
 
         self.dataset_selection = DirectoryComboBox(
             parent=self, 
-            directory=config.DATA, 
+            directory=config.DATA,
             name='Dataset', 
             icon='Dataset', 
             triggers=[self.change_dataset])
         self.dataset_selection.selection.currentTextChanged.connect(self.change_dataset)
 
-        self.data_selection = DirectoryComboBox(
-            parent=self, 
-            directory=os.path.join(config.DATA, self.dataset), 
-            name='Sample', 
-            icon='Data', 
-            triggers=[self.load_file])
-        self.data_selection.selection.currentIndexChanged.connect(self.load_file)
-        
+        # self.data_selection = DirectoryComboBox(
+        #     parent=self, 
+        #     directory=os.path.join(config.DATA, self.dataset), 
+        #     name='Sample', 
+        #     icon='Data', 
+        #     triggers=[self.load_file])
+        # self.data_selection.selection.currentIndexChanged.connect(self.load_file)
+        self.load_dataset_button = ClickButton(self, 'Load Dataset', [self.load_dataset], 'Load dataset.')
         self.parameters = ParameterContainer('Parameters', self)
 
         self.control_group = QWidget()
@@ -219,54 +236,80 @@ class MainWidget(QWidget):
         lays.addWidget(self.buttons)
         lays.addWidget(self.parameters)
         self.control_group.setFixedWidth(400)
-        self.progress_view.setFixedHeight(200)
         
-        btnl = QGridLayout()
-        self.fold_button.setEnabled(False)
-        self.vfold_button.setEnabled(False)
+        btnl = QGridLayout(self.buttons)
         btnl.addWidget(self.fold_button, 1, 1, 1, 1)
-        btnl.addWidget(self.vfold_button, 1, 2, 1, 1)
-        btnl.addWidget(self.load_button, 2, 1, 1, 1)
-        btnl.addWidget(self.save_button, 2, 2, 1, 1)
-        btnl.addWidget(self.clear_button, 3, 1, 1, 2)
-        btnl.addWidget(self.dataset_selection, 5, 1, 1, 2)
-        btnl.addWidget(self.data_selection, 6, 1, 1, 2)
-        self.buttons.setLayout(btnl)
+        btnl.addWidget(self.test_button, 1, 2, 1, 1)
+        btnl.addWidget(self.vfold_button, 2, 1, 1, 1)
+        btnl.addWidget(self.clear_button, 2, 2, 1, 1)
+        btnl.addWidget(self.save_button, 3, 1, 1, 1)
+        btnl.addWidget(self.load_button, 3, 2, 1, 1)
+        btnl.addWidget(self.dataset_selection, 4, 1, 1, 2)
+        btnl.addWidget(self.load_dataset_button, 5, 1, 1, 2)
+
+        self.stats = QWidget()
+        stl = QHBoxLayout(self.stats)
+        stl.addWidget(self.target_statistics)
+        stl.addWidget(self.sequence_statistics)
 
         self.lay = QGridLayout(self)
         # Layout
         self.lay.addWidget(self.sequence_input, 1, 1, 1, 3)
         self.lay.addWidget(self.random_button, 1, 4, 1, 1)
-        self.lay.addWidget(self.target_statistics, 2, 1, 1, 4)
+        self.lay.addWidget(self.stats, 2, 1, 1, 4)
         self.lay.addWidget(self.control_group, 3, 1, 4, 1)
         self.lay.addWidget(self.progress_view, 3, 2, 1, 3)
         self.lay.addWidget(self.img_tabs, 1, 5, 3, 1)
         self.lay.addWidget(self.tabs, 4, 2, 3, 4)
+        self.lay.addWidget(self.targets_table, 1, 6, 6, 1)
+        
         # self.lay.addWidget(self.parameters, 4, 1, 3, 1)
 
         self.parameter_changed()
         self.sequence_input.setText(self.target)
         self.parse_input()
     
+    def load_dataset(self):
+        self.clear_all()
+        self.to_load = [1, 100] if self.dataset != 'rfam_modena' else [1, 29]
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.load_file)
+        self.timer.start(100)
+
     def reload(self, num):
         self.load_image()
 
     def change_dataset(self, data):
         self.dataset = data
-        self.data_selection.set_path(os.path.join(config.DATA, self.dataset))
+        # self.data_selection.set_path(os.path.join(config.DATA, self.dataset))
 
     def random(self):
         mapping = {0:'A', 1:'C', 2:'G', 3:'U'}
         length = random.randint(50, 350)
         sequence = ''.join([mapping[random.randint(0,3)] for x in range(length)])
         self.nucleotides = sequence
-        self.sequence_input.setText(sequence)
-        self.model.prep(self.target)
+        self.nucl_fold(True, reset=True)
+        # self.sequence_input.setText(sequence)
 
     def loop(self, status):
         if status:
             self.load += 1
             self.model.prep(self.target)
+            if self.testing:
+                self.model.envs[0].reset()
+                self.progress_bar.setRange(0, len(self.target))
+            self.start = time.time()
+            self.timer.timeout.connect(self.fold)
+            self.timer.start(1)
+        else:
+            self.reset()
+
+    def test(self, status):
+        self.testing = status
+        if status:
+            self.model.prep(self.target)
+            self.model.envs[0].reset()
+            self.progress_bar.setRange(0, len(self.target))
             self.start = time.time()
             self.timer.timeout.connect(self.fold)
             self.timer.start(1)
@@ -274,15 +317,18 @@ class MainWidget(QWidget):
             self.reset()
 
     def fold(self):
-        if not self.running:
-            if (self.iter < config.ATTEMPTS or (time.time() - self.start) > config.TIME):
-                self.running = True
-                self.fold_thread.start()
-                self.iter += 1
-                self.total_iter += 1
-            else:
-                self.reset()
-            self.update_progress()
+        if self.testing:
+            self.step_thread.start()
+        else:
+            if not self.running:
+                if (self.iter < config.ATTEMPTS or (time.time() - self.start) > config.TIME):
+                    self.running = True
+                    self.fold_thread.start()
+                    self.iter += 1
+                    self.total_iter += 1
+                else:
+                    self.reset()
+                self.update_progress()
 
     ## VIENNA
     def vloop(self, status):
@@ -346,32 +392,67 @@ class MainWidget(QWidget):
                     self.load_image()
                 else:
                     self.new_failed(solution, native=self.load)
+        self.update_progress()
+        self.update_statistics(render=False, new_target=False)
         
+    def process_step(self, solution):
+        # print(solution)
+        solution, done = solution
+        print(solution.string)
+        self.nucleotides = solution.string
+        state = solution.get_state()
+        msg = ''
+        for i in range(state.shape[0]):
+            binstr = ''.join([str(int(x)) for x in state[i, :, 0]])
+            msg += binstr + '\n'
+            self.progress_bar.setValue(solution.index+1)
+        self.progress_display.setText(msg)
+        self.load_image()
+        if done:
+            self.reset()
+            self.process_output(solution)
 
     def new_solution(self, solution, native=0):
         self.sequences.append(solution)
         self.solutions.append(solution)
         self.results_table.new_solution(solution, native=native)
         self.solution_viz.new_solution(solution, native=native)
+        self.targets_table.update(self.current_target, solved=True)
 
     def new_failed(self, solution, native=0):
         self.sequences.append(solution)
         self.failed.append(solution)
         self.failed_table.new_solution(solution, native=native)
         self.failed_viz.new_solution(solution, native=native)
+        self.targets_table.update(self.current_target, solved=False)
 
-    def nucl_fold(self):
-        if self.nucleotides is not None:
+    def new_target(self, target, img=None):
+        self.targets.append(target)
+        self.current_target = len(self.targets) - 1
+        self.target = target.seq
+        self.targets_table.new_target(target)
+
+    def target_selected(self, index):
+        self.current_target = index
+        target = self.targets[index]
+        self.target = target.seq
+        self.nucleotides = self.targets[index].nucleotides
+        self.update_statistics(render=True, new_target=False)
+
+    def nucl_fold(self, btn=True, reset=False):
+        if self.nucleotides != None:
             target, _ = RNA.fold(self.nucleotides)
             if target != self.target:
                 conf = self.model.envs[0].config
-                self.target = target
                 t = DotBracket(target)
+                t.nucleotides = self.nucleotides
+                self.target = target
                 self.solution = Solution(target=t, config=conf, string=self.nucleotides)
-                self.update_statistics(True)
-
+                if reset:
+                    self.nucleotides = None
+                self.update_statistics(True, new_target=btn, target=t)
+                
     def load_image(self, seq=None):
-        print(seq)
         if type(seq) is int:
             self.load_image(None)
         if self.img_disp is self.img_tabs.currentWidget():
@@ -385,12 +466,19 @@ class MainWidget(QWidget):
         draw(sequence, self.nucleotides, col=None)
         img = os.path.join(config.UTILS, 'draw_rna', 'output.svg')
         disp.load(img)
-        
+        return img
 
-    def load_file(self, index):
-        seq = load_sequence(num=int(index+2), dataset=self.dataset)
-        self.sequence_input.setText(seq.seq)
-        self.parse_input()
+    def load_file(self):
+        ind = self.to_load[0]
+        target = load_sequence(num=int(ind), dataset=self.dataset)
+        self.target = target.seq
+        self.nucleotides = None
+        self.to_load[0] += 1
+        if ind == self.to_load[1]:
+            self.timer.stop()
+            self.timer = QTimer()
+        self.update_statistics(new_target=True, target=target)
+
         
     def parse_input(self, str=None):
         dot_bracket_check = re.compile(r'[^.)()]').search # Regex for dotbrackets
@@ -399,12 +487,12 @@ class MainWidget(QWidget):
         if not bool(dot_bracket_check(current_text)) and len(current_text) > 0:
             self.nucleotides = None
             self.target = current_text
-            self.update_statistics()
+            self.update_statistics(new_target=False)
             self.fold_button.setEnabled(True)
             self.vfold_button.setEnabled(True)
         elif not bool(nucl_check(current_text)) and len(current_text) > 0:
             self.nucleotides = current_text.upper()
-            self.nucl_fold()
+            self.nucl_fold(False)
         else:
             self.target_statistics.setText('Invalid input.')
 
@@ -415,23 +503,53 @@ class MainWidget(QWidget):
         self.iter = 0
         self.vfold_button.stop()
         self.fold_button.stop()
+        self.test_button.stop()
+        self.testing = False
         
-    def update_statistics(self, render=True):
-        target = DotBracket(self.target)
-        try:
-            f, = forgi.load_rna(self.target)
-            stems = len([s for s in f.stem_iterator()])
-            stats = '{:15}: {}'.format('Target sequence', target.seq)
-            stats += '\n{:15}: {}'.format('Motifs', target.struct_motifs)
-            stats += '\n\n{:25}: {:6} | {:20}: {:3}'.format(
-                'Target length', target.len, 'Hairpin loops', target.counter['H'])
-            stats += '\n{:25}: {:.2f}% | {:20}: {:3}'.format(
-                'Unpaired Nucleotides', target.percent_unpaired*100, 'Interior loops', target.counter['H'])
-            self.target_statistics.setText(stats)
-        except:
-            pass
+    def update_statistics(self, render=True, new_target=True, target=None, solution=None):
+        
+        if target is None:
+            target = DotBracket(self.target)
+            nucleotides = self.nucleotides
+        else:
+            self.target = target.seq
+            nucleotides = target.nucleotides
+
         if render:
-            self.load_image()
+            img = self.load_image()
+
+        if new_target:
+            self.new_target(target)
+            target = DotBracket(self.target)
+
+        if solution is not None:
+            target = solution.target
+            self.target = solution.target.seq
+            self.nucleotides = nucleotides = solution.string
+            
+        
+        f, = forgi.load_rna(target.seq)
+        stems = len([s for s in f.stem_iterator()])
+        stats = '{:25}: {:6} | {:20}: {:3}'.format(
+            'Target length', target.len, 'Hairpin loops', target.counter['H'])
+        stats += '\n{:25}: {:.2f}% | {:20}: {:3}\n\n'.format(
+            'Unpaired Nucleotides', target.percent_unpaired*100, 'Interior loops', target.counter['H'])
+        
+        ruler = ''.join(['  {:3}'.format(i) for i in range(0, 81, 5)[1:]]) + '\n'
+        stats = ruler
+        nstats = ruler
+
+        for i in range(len(target.seq)//80+1):
+            stats += target.seq[i*80:(i+1)*80] + '\n'
+            if nucleotides is not None:
+                nstats += nucleotides[i*80:(i+1)*80] + '\n'
+        nstats += '\n'+ target.name
+
+        self.target_statistics.setText(stats)
+        self.sequence_statistics.setText(nstats)
+        
+        # except:
+        #     pass
 
     def update_progress(self):
         self.progress_bar.setValue(self.iter)
@@ -442,33 +560,67 @@ class MainWidget(QWidget):
         self.progress_display.setText(text)
     
     def load_seqs(self):
-        sources = ['RNAinverse', 'MODENA', 'NUPACK', 'antaRNA', 'rnaMCTS', 'LEARNA', 'rlif', 'mrlif']
+        sources1 = {'RNAinverse':'RNAinverse', 'MODENA':'MODENA', 'NUPACK':'NUPACK', 'antaRNA':'antaRNA', 'rnaMCTS':'rnaMCTS', 'LEARNA':'LEARNA', 'rlif':'rlif', 'rlif*':'rlif','rlfold':'rlif', 'brlfold':'rlif', 'mrlfold':'rlif'}
+        sources = {'RNAinverse':0, 'MODENA':1, 'NUPACK':2, 'antaRNA':3, 'rnaMCTS':4, 'LEARNA':5, 'rlif':6}
         name = QFileDialog.getOpenFileName()[0]
-        config = self.model.model.env.get_attr('config')[0]
-        with open(name, 'r') as seqfile:
-            seqs = seqfile.readlines()[1:]
-            target_string = seqs[0].strip().strip('\n')
-            target = DotBracket(target_string)
-            self.target = target_string
-            self.update_statistics()
-            for seq in seqs[1:]:
-                seq = seq.strip().strip('\n')
-                seq, t, source = seq.split(' ')
-                solution = Solution(target=target, config=config, string=seq, time=float(t), source=source)
+        conf = self.model.envs[0].config
+        ext = name.split('.')[-1]
+        if ext in ['fasta', 'fa']:
+            fname = name.split(config.delimiter)[-1].split('.')[0]
+            with open(name, 'r') as fasta:
+                seq = ''
+                for line in fasta.readlines():
+                    if line[0] == '>':
+                        if seq != '':
+                            seq = seq.replace('T', 'U')
+                            structure, fe = RNA.fold(seq)
+                            target = DotBracket(structure)
+                            target.name = name
+                            target_nucleotides = seq
+                            solution = Solution(target=target, config=conf, string=seq, time=0, source=fname)
+                            self.nucleotides = solution.string
+                            self.target = target.seq
+                            self.new_target(target)
+                            self.new_solution(solution, native=self.load)
+                            self.update_statistics(new_target=False)
 
-                if solution.hd == 0:
-                    self.new_solution(solution, native=sources.index(source))
-                else:
-                    self.new_failed(solution)
-            self.load+= 1
+                            seq = ''
+                        name = line[1:].strip('\n')
+                    else:
+                        seq += line.strip('\n')
+        else:
+            with open(name, 'r') as seqfile:
+                seqs = seqfile.readlines()[1:]
+                target_string = seqs[0].strip().strip('\n')
+                target = DotBracket(target_string)
+                self.target = target_string
+                self.update_statistics(new_target=True)
+                self.sequence_input.setText(target_string)
+                for seq in seqs[1:]:
+                    seq = seq.strip().strip('\n')
+                    seq, t, source = seq.split(' ')
+                    source = sources1[source]
+                    # if seq != '---':
+                    solution = Solution(target=target, config=conf, string=seq, time=float(t), source=source)
+
+                    if solution.hd == 0:
+                        self.new_solution(solution, native=sources[source])
+                        self.nucleotides = solution.string
+                        self.solution = solution
+                        self.target = target_string
+                        self.update_statistics(new_target=True)
+                    else:
+                        self.new_failed(solution)
+        self.load+= 1
             
     def save_seqs(self):
         save_dir = QFileDialog.getSaveFileName()[0]
 
         with open(save_dir, 'w') as seqfile:
+            seqfile.write('{} valid solutions, {} invalid solutions\n'.format(len(self.solutions), len(self.failed)))
             seqfile.write(self.target+'\n')
             for seq in self.sequences:
-                seqfile.write(seq.string+'\n')
+                seqfile.write(seq.string + ' {:.2f} '.format(seq.time) + seq.source +'\n')
 
     def solution_selected(self, index, row=True):
         solution = self.solutions[index]
@@ -476,7 +628,9 @@ class MainWidget(QWidget):
         if row:
             self.results_table.selectRow(index)
         self.nucleotides = solution.string
+        # self.target = solution.target.seq
         self.solution_viz.highlight(index)
+        self.update_statistics(new_target=False, solution=solution)
         self.load_image(solution.target.seq)
 
     def failed_selected(self, index, row=True):
@@ -489,7 +643,7 @@ class MainWidget(QWidget):
         self.progress_bar.setRange(0, config.ATTEMPTS)
         if parameter in ['temperature', 'dangles', 'noGU', 'no_closingGU', 'uniq_ML']:
             set_vienna_param(parameter, config.get(parameter))
-            self.nucl_fold()
+            self.nucl_fold(False)
         if parameter in ['permutation_budget', 'permutation_radius', 'permutation_threshold']:
             conf = self.model.model.env.get_attr('config')[0]
             conf[parameter] = config.get(parameter)
@@ -675,8 +829,8 @@ class ParameterContainer(QGroupBox):
 
     def vienna_params(self, param):
         set_vienna_params(param)
-        self.par.nucl_fold()
-        self.par.update_statistics()
+        self.par.nucl_fold(False)
+        self.par.update_statistics(new_target=False)
         
 class SolutionTable(QTableWidget):
     def __init__(self, name, parent, config):
@@ -685,7 +839,7 @@ class SolutionTable(QTableWidget):
         self.setHorizontalHeaderLabels(['ID', 'Nucl seq', 'FE', 'Probability', 't', 'source'])
         self.setColumnWidth(1, 500)
         self.setColumnWidth(0, 50)
-        self.itemClicked.connect(self.row_selected)
+        self.currentCellChanged.connect(self.row_selected)
     
     def new_solution(self, solution, native=0):
         count = self.rowCount()
@@ -701,18 +855,18 @@ class SolutionTable(QTableWidget):
         self.setItem(count, 5, QTableWidgetItem('{:10}'.format(solution.source)))
         self.setRowHeight(count, 15)
 
-    def row_selected(self, item):
-        ind = item.row()
+    def row_selected(self, ind):
+        # ind = item.row()
         self.par.solution_selected(ind, row=False)
 
 class FailedTable(QTableWidget):
     def __init__(self, name, parent, config):
-        QTableWidget.__init__(self, 0, 6, parent=parent)
+        QTableWidget.__init__(self, 0, 7, parent=parent)
         self.par = parent
         self.setHorizontalHeaderLabels(['ID', 'Nucl seq', 'FE', 'HD', 'MD', 't', 'source'])
         self.setColumnWidth(1, 500)
         self.setColumnWidth(0, 50)
-        self.itemClicked.connect(self.row_selected)
+        self.currentCellChanged.connect(self.row_selected)
 
     def new_solution(self, solution, native=0):
         count = self.rowCount()
@@ -729,10 +883,58 @@ class FailedTable(QTableWidget):
         self.setItem(count, 6, QTableWidgetItem('{:10}'.format(solution.source)))
         self.setRowHeight(count, 15)
 
-    def row_selected(self, item):
-        ind = item.row()
-        print(ind)
+    def row_selected(self, ind):
+        # ind = item.row()
+        # print(ind)
         self.par.failed_selected(ind, row=False)
+
+
+class TargetTable(QTableWidget):
+    def __init__(self, name, parent, config):
+        QTableWidget.__init__(self, 0, 4, parent=parent)
+        self.par = parent
+        self.setHorizontalHeaderLabels(['Seq', 'len', '%S', '%F'])
+        # self.setColumnWidth(1, 500)
+        self.setColumnWidth(1, 30)
+        self.setColumnWidth(2, 30)
+        self.setColumnWidth(3, 30)
+
+        self.currentCellChanged.connect(self.row_selected)
+
+    def new_target(self, target):
+        count = self.rowCount()
+        self.insertRow(count)
+        s = 70
+        self.setColumnWidth(0, s)
+        # QTableWidgetItem().set
+        thumb = QSvgWidget(self)
+        thumb.setFixedSize(s, s)
+        img = os.path.join(config.UTILS, 'draw_rna', 'output.svg')
+        thumb.load(img)
+        
+        self.setCellWidget(count, 0, thumb)
+        self.setItem(count, 1, QTableWidgetItem('{}'.format(target.len)))
+        self.setItem(count, 2, QTableWidgetItem(str(0)))
+        self.setItem(count, 3, QTableWidgetItem(str(0)))
+        self.setItem(count, 4, QTableWidgetItem(target.name))
+        self.setRowHeight(count, s)
+
+    def row_selected(self, item):
+        # print(item)
+        if type(item) is int:
+            # print(item)
+            ind = item
+            self.par.target_selected(ind)
+        else:
+            ind = item.row()
+            self.par.target_selected(ind)
+
+    def update(self, row, solved):
+        index = 2 if solved else 3
+        item = self.item(row, index)
+        num = item.setText(str(int(item.text()) + 1))
+
+
 
 class Crosshair(pg.GraphicsObject):
     def __init__(self, parent, graph):
@@ -1006,7 +1208,7 @@ class DirectoryComboBox(QWidget):
         index = self.fsm.setRootPath(directory)
         self.selection.setModel(self.fsm)
         self.selection.setRootModelIndex(index)
-        self.selection.setCurrentIndex(1)
+        self.selection.setCurrentIndex(0)
 
     def check_existing(self, value):
         return True if self.selection.findData(value) >= 0 else False

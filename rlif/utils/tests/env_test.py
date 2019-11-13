@@ -1,6 +1,5 @@
 # import cv2
 from rlif.rna import colorize_nucleotides
-# from rlif.utils import create_browser, show_rna
 import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     from rlif.rna import Dataset
 
     d = Dataset(start=1, n_seqs=100, dataset='eterna', encoding_type=2)
-    e = RnaDesign(get_parameters('RnaDesign'))
+    e = RnaDesign(get_parameters('RnaDesign')['environment'])
     e.randomize = False
     e.dataset = d
     visual_test(e)

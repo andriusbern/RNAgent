@@ -1,4 +1,4 @@
-name: rlif2
+name: rlif
 channels:
   - bioconda
 dependencies:

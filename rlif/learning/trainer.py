@@ -1,17 +1,17 @@
 
+
 import os, sys
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# from tensorflow.python.util import deprecation
-# deprecation._PRINT_DEPRECATION_WARNINGS = False
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from tensorflow.python.util import deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 import tensorflow as tf
 import stable_baselines, gym, rlif
 from stable_baselines.common.vec_env import SubprocVecEnv, VecFrameStack, DummyVecEnv
 import numpy as np
 import os, yaml, sys, subprocess, time, datetime, random, copy
 # Local
-from rlif.utils import show_rna, create_browser
 from rlif.rna import DotBracket, Dataset
 from .tester import Tester
 from tqdm import tqdm
@@ -28,6 +28,7 @@ class Trainer(object):
 
         self.config = None
         self.env = None
+        self.test_env = None
         self.model = None
         self.current_checkpoint = 0
         self.test_runner = Tester(self)
@@ -75,7 +76,7 @@ class Trainer(object):
             print('\n\n\nStopped training...\n')
             self._save()
          
-    def load_model(self, num=None, config_file=None, latest=False, path=None, checkpoint='', n_envs=1, model_only=False):
+    def load_model(self, num=None, config_file=None, latest=False, path=None, checkpoint='', n_envs=1, model_only=False, t_env=False):
         """
         Load a saved model either from the 
         """
@@ -111,7 +112,7 @@ class Trainer(object):
         self._unique = model_path.split(settings.delimiter)[-1]
         
         if not model_only:
-            self.create_env()    
+            self.create_env(test=t_env)    
         self.model = model_object.load(model_file[:-4]) #, env=self.env, tensorboard_log=self._env_path
 
         return self
@@ -159,14 +160,16 @@ class Trainer(object):
         else:
             return getattr(rlif.learning, policy_name)
 
-    def create_env(self):
+    def create_env(self, test=False):
         """
         Parses the environment to correctly return the attributes based on the spec and type
         Creates a corresponding vectorized environment
         """
         defaults = get_parameters('RnaDesign')['environment']
-        config = {**self.config['environment'], **defaults}
+        config = {**defaults,**self.config['environment']}
         self.env = create_env(self.env_name, config, n_workers=self.config['main']['n_workers'])
+        if test:
+            self.test_env = create_env(self.env_name, config, n_workers=self.config['main']['n_workers'])
 
     # Directory management
     def _create_model_dir(self):
@@ -514,7 +517,6 @@ def get_env_type(env_name):
             gym.make(env_name)
             return 'gym'
         except:
-            print('{} not found.'.format(env_name))
             return None
 
 def create_env(env_name, config=None, n_workers=1, image_based=True, **kwargs):

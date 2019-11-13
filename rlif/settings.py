@@ -34,7 +34,6 @@ class ConfigManager():
     PARAMETERS = os.path.join(UTILS, 'parameters')
     CONFIG = os.path.join(MAIN_DIR, 'config')
 
-
     ############
     # Parameters
     ############

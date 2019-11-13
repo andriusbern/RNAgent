@@ -11,6 +11,7 @@ from rlif.rna import colorize_nucleotides, highlight_mismatches
 import numpy as np
 
 
+
 import RNA
 header = '\n' + '='*120 + '\n'
 
@@ -170,7 +171,7 @@ def fold(model, args):
 def load_model(directory, number, checkpoint=None):
     n_envs = 6 if args.multi else 1
     trained_model = Trainer(
-        'RnaDesign', directory).load_model(number, checkpoint=checkpoint, n_envs=n_envs)
+        'RnaDesign', directory).load_model(number, checkpoint='12', n_envs=n_envs, t_env=True)
     return trained_model
 
 if __name__ == "__main__":
@@ -189,18 +190,9 @@ if __name__ == "__main__":
     parser.print_help()
     
     model_dict = {
-        '0': ['experiment4', 2, '8'], # Best fo sho, low U
-        '1': ['t238', 1, '10'], # 
-        '2': ['e238', 2, '11'],
-        '3': ['experiment5', 1, '12'],
-        '4': ['experiment4', 1, '10'],
-        '5': ['long', 1, '56'],
-        '6': ['trit', 1, '20'], # bad
-        # '2': ['l', 1, '20'], # very bad
-        '7': ['l2', 1, '32'],
-        '8': ['latest', 1, '39'],
-        '9': ['latest', 2, '31'],
-        '10': ['experiment6', 2, '19'],
+        '0': ['experiment4', 1, '8'], 
+        '1': ['experiment5', 2, '12'],
+        '2': ['experiment4', 1, '10'],
         }
 
     params = settings.model_dict[args.model]

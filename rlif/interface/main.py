@@ -9,7 +9,7 @@ class Window(QtWidgets.QMainWindow):
     def __init__(self, parent):
         super(Window, self).__init__()
         self.setWindowTitle('RLIF: RNA Inverse folding')
-        self.dimensions = [50, 400, 1500, 1000]
+        self.dimensions = [50, 400, 1600, 850]
         self.setGeometry(*self.dimensions)
         self.par = parent
         self.settings = None
@@ -81,7 +81,7 @@ class RLIFGUI(QtWidgets.QApplication):
         self.exit(0)
     
     def set_style(self):
-        self.set_style('Fusion')
+        self.set_style('Breeze')
         # pg.setConfigOption('background', 'w')
     
     def main(self, args):

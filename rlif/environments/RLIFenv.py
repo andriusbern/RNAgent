@@ -9,7 +9,7 @@ class RnaDesign(gym.Env):
         self.env_id = rank
 
         # Parameters
-        self.randomize     = self.config['randomize']
+        self.randomize     = False
         self.meta_learning = self.config['meta_learning']
         self.permute       = self.config['permute']
         self.verbose       = self.config['verbose']

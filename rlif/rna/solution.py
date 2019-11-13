@@ -4,7 +4,6 @@ import time as t
 from rlif.settings import ConfigManager as settings
 from rlif.rna import DotBracket, hamming_distance
 from rlif.rna import colorize_nucleotides, highlight_mismatches
-from rlif.utils import create_browser, show_rna
 
 fold_fn = settings.fold_fn
 import RNA
@@ -314,16 +313,18 @@ class Solution(object):
                 strand1 = indices[:dims[0]]
                 self.str[strand1[0]-1], self.str[strand1[-1]-1] = pair
             
-        # Close stems with GC/CG
-        for s in self.graph.stem_iterator():
-            nucls = [('G', 'C'), ('C', 'G')] #('G', 'U'), ('U', 'G'), 
-            if random.random() > 0.5:
-                dims = self.graph.get_node_dimensions(s)
-                indices = self.graph.elements_to_nucleotides([s])
-                strand1 = indices[:dims[0]]
-                strand2 = indices[-dims[1]:]
-                self.str[strand1[0]-1], self.str[strand2[-1]-1] = random.sample(nucls, 1)[0]
-                self.str[strand1[-1]-1], self.str[strand2[0]-1] = random.sample(nucls, 1)[0]
+        # # Close stems with GC/CG
+        # for s in self.graph.stem_iterator():
+        #     nucls = [('G', 'C'), ('C', 'G')] #('G', 'U'), ('U', 'G'), 
+        #     if random.random() > 0.5:
+        #         dims = self.graph.get_node_dimensions(s)
+        #         indices = self.graph.elements_to_nucleotides([s])
+        #         strand1 = indices[:dims[0]]
+        #         strand2 = indices[-dims[1]:]
+        #         pair = random.sample(nucls, 1)[0]
+        #         print(pair)
+        #         self.str[strand1[0]-1], self.str[strand2[-1]-1] = pair
+        #         self.str[strand1[-1]-1], self.str[strand2[0]-1] = reversed(list(pair))
 
     def summary(self, print_output=False, colorize=True):
         """

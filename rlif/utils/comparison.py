@@ -1,3 +1,5 @@
+# Script for comparing various RNA inverse folding algorithms
+
 import numpy as np
 import rlif.settings
 from rlif.settings import ConfigManager as settings
@@ -17,6 +19,7 @@ from mcts import fold as mf
 from learna import Learna_fold
 from rlif.rna import DotBracket, Solution, Dataset
 from rlif.learning import Trainer, RLIF
+
 
 
 lfold = Learna_fold()
@@ -248,7 +251,7 @@ def mass_fold(seq, time_limit=10, file=None, log=None):
 def eval_dataset(dataset='eterna', time_limit=30):
     logfile = os.path.join(settings.RESULTS, 'comparison', '{}_{}.csv'.format(dataset, random.randint(1,1000)))
     
-    n_seqs=29 if dataset=='rfam_taneda' else 100
+    n_seqs=29 if dataset=='rfam_modena' else 100
     data = Dataset(
         dataset=dataset, 
         start=1, 
@@ -262,13 +265,6 @@ def eval_sequence(data, seq=1, n=10, time_limit=10, logdir=None):
     logfile = os.path.join(logdir, 'solutions.csv')
     logfile2 = os.path.join(logdir, '{}.log'.format(seq))
     print(logfile, logfile2)
-
-    # n_seqs=29 if dataset=='rfam_taneda' else 100
-    # data = Dataset(
-    #     dataset=dataset, 
-    #     start=1, 
-    #     n_seqs=seqs, 
-    #     encoding_type=2)
 
     target = data.sequences[seq-1]
     log = open(logfile2, 'a+')
@@ -292,30 +288,11 @@ if __name__ == "__main__":
     rlif = RLIF()
     names = ['RNAinverse', 'MODENA', 'NUPACK', 'antaRNA', 'rnaMCTS', 'LEARNA', 'rlifold']
     fns = [vienna_fold, modena_fold, nupack_fold, antarna_fold, mcts_fold, learna_fold, rlifold]
-    # names = ['exp4_2_8', 'exp4_2_8_B','exp4_1_10','exp4_1_10_B', 'exp5_1_9', 'exp5_1_9_B', 'exp4_2_12', 'LEARNA']
-    # fns = [rlifold]
-    # names = ['rlifold']
-    # fns = [fold, fold, fold, fold, fold, fold, fold, learna_fold]
-
-    # models = [
-    #     # Trainer().load_model(1, checkpoint='8', n_envs=1),
-    #     # Trainer().load_model(1, checkpoint='8', n_envs=1),
-    #     # Trainer().load_model(2, checkpoint='10', n_envs=1),
-    #     # Trainer().load_model(2, checkpoint='10', n_envs=1),
-    #     # Trainer().load_model(3, checkpoint='9', n_envs=1),
-    #     # Trainer().load_model(3, checkpoint='9', n_envs=1),
-    #     # Trainer().load_model(1, checkpoint='12', n_envs=1),
-    #     # Trainer().load_model(4, checkpoint='9', n_envs=1),
-    #     # Trainer().load_model(5, checkpoint='11', n_envs=1)
-    # ]
-    # models[1].env.set_attr('boosting', True)
-    # models[3].env.set_attr('boosting', True)
-    # models[5].env.set_attr('boosting', True)
 
 
     n_methods = len(names)
-    start = 1
-    seqs = 100
+    start = 51
+    seqs = 49
     seq_list = [60, 64, 67, 71, 72, 73, 74, 76, 78, 79, 80, 81, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
     seq_list2 = [71, 72, 98, 81, 80, 74, 88, 89]
     seq_list3 = [60, 64, 67, 71, 73, 76, 78, 80, 81, 85, 86, 87, 89, 90, 91, 92, 94, 96, 97]
@@ -323,13 +300,13 @@ if __name__ == "__main__":
     seq_list5 = [73, 92, 78, 81, 80, 71]
     n = 1
     t = 120
-    dataset = 'rfam_test'
+    dataset = 'eterna'
     data = Dataset(
         dataset=dataset, 
         start=start, 
         n_seqs=seqs, 
         encoding_type=2)
-    logdir = os.path.join(settings.RESULTS, 'comparison', '{}_{}final1_50'.format(dataset, random.randint(1,100000)))
+    logdir = os.path.join(settings.RESULTS, 'comparison', '{}_{}final1_100'.format(dataset, random.randint(1,100000)))
     if not os.path.isdir(logdir):
         os.mkdir(logdir)
 
@@ -337,7 +314,7 @@ if __name__ == "__main__":
     avg_times = np.zeros([seqs, n_methods])
     try:
         for i in range(seqs):# range(len(seq_list))
-            solved, times = eval_sequence(data=data, seq=start+i, n=n, time_limit=t, logdir=logdir)
+            solved, times = eval_sequence(data=data, seq=i, n=n, time_limit=t, logdir=logdir)
             total_solved[i, :] += solved
             avg_times[i, :] += times / n
     except KeyboardInterrupt:
@@ -353,6 +330,4 @@ if __name__ == "__main__":
     print(names, '\n', total_solved)
     print(np.sum(total_solved, axis=1))
     print(np.sum(total_solved, axis=0))
-
-
     
