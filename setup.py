@@ -2,7 +2,7 @@ from setuptools import setup
 
 packages = [
     'numpy==1.17.1',        
-    'tensorflow==1.13.1',   
+    'tensorflow==1.15.0',   
     'stable-baselines==2.7.0',
     'gym',
     'forgi',
