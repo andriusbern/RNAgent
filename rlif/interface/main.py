@@ -1,9 +1,7 @@
-from PyQt5 import QtCore, QtWidgets, QtGui
-import pyqtgraph as pg
-
+from PySide2 import QtCore, QtWidgets, QtGui
 from rlif.interface import MainWidget
+import pyqtgraph as pg
 import sys, os
-
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent):
@@ -13,16 +11,6 @@ class Window(QtWidgets.QMainWindow):
         self.setGeometry(*self.dimensions)
         self.par = parent
         self.settings = None
-        
-        exit_action = QtWidgets.QAction('Exit', self)
-        exit_action.setShortcut('Ctrl+Q')
-        exit_action.setStatusTip('Exit application')
-        exit_action.triggered.connect(self.close)
-
-        help_action = QtWidgets.QAction('Haelp', self)
-        help_action.setShortcut('F1')
-        help_action.setStatusTip('Help')
-        help_action.triggered.connect(self.showdialog)
 
         style_action = QtWidgets.QAction('Dark UI', self)
         style_action.setShortcut('F2')
@@ -30,18 +18,6 @@ class Window(QtWidgets.QMainWindow):
         style_action.triggered.connect(self.mode)
 
         self.status_bar = self.statusBar()
-        
-        menu = self.menuBar()
-        file = menu.addMenu('&File')
-        actions = [exit_action, style_action]
-        file.addActions(actions)
-        
-        help_menu = menu.addMenu('&Help')
-        help_menu.addAction(help_action)
-
-        # toolbar = self.addToolBar('Exit')
-        # toolbar.addActions(actions)
-
         self.main_widget = MainWidget(self)
         self.setCentralWidget(self.main_widget)
         self.show()
@@ -58,10 +34,10 @@ class Window(QtWidgets.QMainWindow):
         msg.setWindowTitle("RLIF")
         msg.setDetailedText("Andrius Bernatavicius, 2019")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
-        retval = msg.exec_()
+        msg.exec_()
 
     def settings_menu(self):
-        self.settings.setGeometry(QtCore.QRect(1500, 600, 600, 400))
+        self.settings.setGeometry(QtCore.QRect(1280, 800, 0, 0))
         self.settings.show()
         self.settings.raise_()
     
@@ -71,7 +47,7 @@ class Window(QtWidgets.QMainWindow):
 
 class RLIFGUI(QtWidgets.QApplication):
     def __init__(self, *args):
-        self.setFont(QtGui.QFont('Monospace', 8))
+        self.setFont(QtGui.QFont('Monospace', 7))
         QtWidgets.QApplication.__init__(self, *args)
         self.setStyle('QtCurve')
         self.window = Window(self)
@@ -80,16 +56,9 @@ class RLIFGUI(QtWidgets.QApplication):
     def closeEvent( self ):
         self.exit(0)
     
-    def set_style(self):
-        self.set_style('Breeze')
-        # pg.setConfigOption('background', 'w')
-    
     def main(self, args):
         self.window.show()
         self.window.raise_()
         sys.exit(self.exec_())
     
-if __name__ == "__main__":
-    interface = App([])
-    interface.main(sys.argv)
     

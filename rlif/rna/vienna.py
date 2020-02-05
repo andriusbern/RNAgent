@@ -2,7 +2,12 @@ import os, subprocess, sys
 from rlif.settings import ConfigManager as settings
 
 import RNA
-def set_vienna_params(param):
+import rlif
+
+def set_vienna_params(params):
+    """
+    Set the energy parameters of the RNAfold
+    """
     param_files = {
         1: 'rna_turner2004.par',
         2: 'rna_turner1999.par',
@@ -12,6 +17,13 @@ def set_vienna_params(param):
     params = os.path.join(settings.MAIN_DIR, 'utils', 'parameters', param_files[param])
     RNA.read_parameter_file(params)
     return params
+
+def config_vienna(**kwargs):
+    """
+    Configure RNAfold
+    """
+    for arg, val in kwargs.items():
+        setattr(RNA.cvar, arg, val)
 
 def fold(sequence, worker):
     """
@@ -30,7 +42,7 @@ def fold(sequence, worker):
     try:
         free_energy = float(free_energy)
     except:
-        free_energy = 0.000
+        free_energy = 0.
     
     return secondary_structure, free_energy
 

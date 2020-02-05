@@ -4,13 +4,13 @@ import os, datetime, sys, time
 from rlif.settings import ConfigManager as settings
 import numpy as np
 import pandas as pd
-sys.path.append('/home/andrius/thesis/code/comparison/learna/src')
+sys.path.append('/home/andrius/thesis/rlif/comparison/learna/src')
 # from learna import Learna_fold
 
 
 class Tester(object):
     """
-    A class for validating the model while it's training
+    A class for validating the model on benchmarks while it's training
     Provides:
         1. Detailed summary of the results on test sets
         2. Hyperparameter adjustment during training
@@ -43,8 +43,6 @@ class Tester(object):
     def timed_evaluation(self, dataset='rfam_runge', time_limit=60, permute=False, show=False, pause=0, verbose=True):
         """
         Run timed test on a benchmark dataset
-
-        Looks horrible, not really possible to refactor
         """
         model = self.wrapper.model
 
@@ -68,9 +66,6 @@ class Tester(object):
         data = model.env.get_attr('dataset')[0]
         get_next_target = model.env.get_attr('next_target_structure')
 
-        if show:
-            driver = create_browser('double')
-
         solved  = []
         t_total = 0
         attempts = np.zeros([n_seqs], dtype=np.uint8)
@@ -88,15 +83,11 @@ class Tester(object):
                 
                 done = [False]
                 while not done[0]:
-
                     action, _ = model.predict(test_state)
                     test_state, _, done, _ = model.env.step(action)
 
                 solution = model.env.get_attr('prev_solution')[0]
                 target_id = solution.target.file_nr - 1
-                if show:
-                    show_rna(solution.folded_structure, solution.string, driver, 1)
-                    time.sleep(pause)
 
                 attempts[target_id] += 1
                 t_episode = time.time() - ep_start
@@ -106,23 +97,22 @@ class Tester(object):
                     min_hd[target_id] = solution.hd
 
                 if solution.hd <= 0:
-                    if verbose:
-                        solution.summary(True)
-                        print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(
-                            len(solved),
-                            n_seqs, 
-                            target_id, 
-                            attempts[target_id], 
-                            t_per_sequence[target_id]))
+                    solution.summary(True)
+                    print('({}/{}) Solved sequence: {} in {} iterations, {:.2f} seconds...\n'.format(
+                        len(solved),
+                        n_seqs, 
+                        target_id, 
+                        attempts[target_id], 
+                        t_per_sequence[target_id]))
 
                     # Remove solved target from targets to be solved
                     solved.append(
                         [target_id,
-                            solution, 
-                            attempts[target_id], 
-                            min_hd[target_id], 
-                            round(t_per_sequence[target_id],2), 
-                            time_limit])
+                        solution, 
+                        attempts[target_id], 
+                        min_hd[target_id], 
+                        round(t_per_sequence[target_id],2), 
+                        time_limit])
 
         except KeyboardInterrupt:
             pass
@@ -204,18 +194,6 @@ class Tester(object):
                 f.write(header)
         with open(path, 'a') as f:
             f.write(data_entry)
-
-    def write_test_summary(self):
-        """
-        Detailed statistics on the tests
-        2. General overview of progress during training
-        """
-
-    def modify_parameters(self):
-        """
-        Change the model'solution hyperparameters in between checkpoints
-        """
-    
 
 
 

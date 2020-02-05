@@ -30,7 +30,7 @@ This package contains:
       7. tqdm
    
    2. GUI version:
-      1.  PyQt5
+      1.  PySide2
       2.  pyqtgraph
       3.  matplotlib
 

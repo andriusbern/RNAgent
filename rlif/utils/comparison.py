@@ -20,10 +20,6 @@ from learna import Learna_fold
 from rlif.rna import DotBracket, Solution, Dataset
 from rlif.learning import Trainer, RLIF
 
-
-
-lfold = Learna_fold()
-
 def nupack_fold(sequence, file_n=0, time_limit=10):
 
     path = '/home/andrius/thesis/comparison/nupack3.0.6/bin/'
@@ -31,7 +27,7 @@ def nupack_fold(sequence, file_n=0, time_limit=10):
     filename = os.path.join(path, fs)
     with open(filename, 'w') as f:
         f.write(sequence)
-    command = ['./design', str(file_n)]
+    command = ['./design','-T', '37', '-material', 'rna1999', str(file_n)]
     p = subprocess.Popen(command, cwd=path, stdout=subprocess.PIPE)
 
     t0, t = time.time(), 0
@@ -43,7 +39,6 @@ def nupack_fold(sequence, file_n=0, time_limit=10):
         seq = output.split('\n')[-3].strip()
         seq = seq.split(':')[-1].strip()
         return seq
-        
     else:
         p.terminate()
         p.kill()
@@ -58,9 +53,9 @@ def modena_fold(sequence, file_n=0, time_limit=10):
 -1*((F:CONT-50)^2)^0.5
 -1*(C:FE-B:EFE)
 ;
-B RNAfold-p 1 "-d2"
-C RNAeval 1 "-d2"
-F GC 0""".format(sequence)
+B RNAfold-p 1 "-d2" "-P" "{}"
+C RNAeval 1 "-d2" "-P" "{}"
+F GC 0""".format(sequence, vienna_location, vienna_location)
 
     path = '/home/andrius/thesis/comparison/MODENA'
     fs = str(file_n) + '.inp'
@@ -96,15 +91,22 @@ def antarna_fold(sequence, time_limit=10):
 
     if p.returncode is not None:
         output = p.communicate()[0].decode('utf-8')
-        pr = output.split('\n')[-2].strip()
-        return pr
+        seqs = []
+        try:
+            for line in output.split('\n'):
+                if len(line) > 0:
+                    if line[0] in ['A', 'U', 'G', 'C']:
+                        seqs.append(line.strip())
+        except exception as e:
+            print(e, 'antarna_broke')
+        return seqs
     else:
         p.terminate()
         p.kill()
         return None
 
 def vienna_fold(sequence, time_limit=10):
-    command = ['RNAinverse', '-P', vienna_location]
+    command = ['RNAinverse', '-d2', '-P', vienna_location]
     p = subprocess.Popen(command, cwd='/usr/bin', shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     try:
         output = p.communicate(sequence.encode('utf-8'), timeout=time_limit)
@@ -163,19 +165,16 @@ def mass_fold(seq, time_limit=10, file=None, log=None):
                 'write_threshold': 0}
 
     print('\n\nSequence: {}   |   l={}   |   t={}'.format(seq, len(seq), time_limit))
-    # Reward
 
-    # names = ['rlif', 'mrlif', 'brlif']
-    # fns = [rlif_fold, mrlif_fold, brlif_fold]
-    
-    # names = ['RNAinverse', 'MODENA', 'NUPACK', 'antaRNA', 'rnaMCTS', 'LEARNA', 'rlif', 'mrlif', 'brlif']
-    #'LEARNA',learna_fold
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     rlif.prep(seq)
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     target = DotBracket(seq)
 
     if file is not None:
         file = open(file, 'a+')
-        file.write(','.join([seq, str(time_limit), str(len(seq))])+'\n')
+        file.write(','.join([seq, str(time_limit), str(len(seq)), log.split('/')[-1].split('.')[0]])  +'\n')
         file.write(','.join(['seq', 'source', 't', 'hd', 'md', 'fe', 'ed', 'attempts'])+'\n')
     if log is not None:
         log = open(log, 'a+')
@@ -205,8 +204,16 @@ def mass_fold(seq, time_limit=10, file=None, log=None):
                         string=result, 
                         time=t_eval, 
                         source=names[i])]
-                else:
-                    solutions = result
+                elif type(result) is list:
+                    if type(result[0]) is str:
+                        solutions = [Solution(
+                            target=target, 
+                            config=config, 
+                            string=string, 
+                            time=t_eval, 
+                            source=names[i]) for string in result]
+                    else:
+                        solutions = result
                 for solution in solutions:
                     attempts += 1
                     hd = solution.hd
@@ -286,27 +293,23 @@ def eval_sequence(data, seq=1, n=10, time_limit=10, logdir=None):
 if __name__ == "__main__":
 
     rlif = RLIF()
-    names = ['RNAinverse', 'MODENA', 'NUPACK', 'antaRNA', 'rnaMCTS', 'LEARNA', 'rlifold']
+    lfold = Learna_fold()
+    names = ['RNAinverse', 'MODENA', 'NUPACK', 'antaRNA', 'rnaMCTS', 'learna', 'rlif'] #
     fns = [vienna_fold, modena_fold, nupack_fold, antarna_fold, mcts_fold, learna_fold, rlifold]
-
+    # fns = [rlifold,vienna_fold, nupack_fold, modena_fold, antarna_fold, mcts_fold] #vienna_fold, nupack_fold, modena_fold, antarna_fold, mcts_fold, 
 
     n_methods = len(names)
-    start = 51
-    seqs = 49
-    seq_list = [60, 64, 67, 71, 72, 73, 74, 76, 78, 79, 80, 81, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
-    seq_list2 = [71, 72, 98, 81, 80, 74, 88, 89]
-    seq_list3 = [60, 64, 67, 71, 73, 76, 78, 80, 81, 85, 86, 87, 89, 90, 91, 92, 94, 96, 97]
-    seq_list4 = [71, 80, 81, 87, 92, 97, 60, 64]
-    seq_list5 = [73, 92, 78, 81, 80, 71]
+    start = 1
+    seqs = 50
     n = 1
-    t = 120
+    t = 10
     dataset = 'eterna'
     data = Dataset(
         dataset=dataset, 
-        start=start, 
-        n_seqs=seqs, 
+        start=1, 
+        n_seqs=100, 
         encoding_type=2)
-    logdir = os.path.join(settings.RESULTS, 'comparison', '{}_{}final1_100'.format(dataset, random.randint(1,100000)))
+    logdir = os.path.join(settings.RESULTS, 'comparison', '0{}RLIFLEARNA-50-100-180s'.format(dataset))
     if not os.path.isdir(logdir):
         os.mkdir(logdir)
 
@@ -314,7 +317,7 @@ if __name__ == "__main__":
     avg_times = np.zeros([seqs, n_methods])
     try:
         for i in range(seqs):# range(len(seq_list))
-            solved, times = eval_sequence(data=data, seq=i, n=n, time_limit=t, logdir=logdir)
+            solved, times = eval_sequence(data=data, seq=start+i, n=n, time_limit=t, logdir=logdir)
             total_solved[i, :] += solved
             avg_times[i, :] += times / n
     except KeyboardInterrupt:
@@ -331,3 +334,40 @@ if __name__ == "__main__":
     print(np.sum(total_solved, axis=1))
     print(np.sum(total_solved, axis=0))
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#  seq_list = [60, 64, 67, 71, 72, 73, 74, 76, 78, 79, 80, 81, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
+#     seq_list2 = [71, 72, 98, 81, 80, 74, 88, 89]
+#     seq_list3 = [60, 64, 67, 71, 73, 76, 78, 80, 81, 85, 86, 87, 89, 90, 91, 92, 94, 96, 97]
+#     seq_list4 = [71, 80, 81, 87, 92, 97, 60, 64]
+#     seq_list5 = [73, 92, 78, 81, 80, 71]

@@ -9,12 +9,12 @@ class RnaDesign(gym.Env):
         self.env_id = rank
 
         # Parameters
-        self.randomize     = False
-        self.meta_learning = self.config['meta_learning']
+        self.randomize     = True
+        self.meta_learning = True # self.config['meta_learning']
         self.permute       = self.config['permute']
         self.verbose       = self.config['verbose']
         self.boosting = False
-        self.use_mlp  = False
+        self.use_mlp  = True
         self.testing_mode = True
 
         # Stats
@@ -68,11 +68,14 @@ class RnaDesign(gym.Env):
         else:
             self.done = True
             solution.evaluate(
-                reward=not self.testing_mode,
+                reward=True,
                 permute=self.permute,
                 verbose=False,
                 compute_statistics=self.testing_mode,
                 boost=self.boosting)
+
+            print(solution.string)
+            print(solution.target, '\n', solution.r, solution.hd)
         state, reward = solution.get_state(reshape=self.use_mlp), solution.r
 
         return state, reward, self.done, {}
@@ -94,6 +97,7 @@ class RnaDesign(gym.Env):
         Loads a dataset
         """
         dataset = Dataset(
+            dataset='rfam_train',
             length=self.config['seq_len'],
             n_seqs=self.config['seq_count'],
             encoding_type=self.config['encoding_type'])

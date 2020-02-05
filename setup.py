@@ -1,14 +1,14 @@
 from setuptools import setup
 
 packages = [
-    'numpy==1.17.1',        
-    'tensorflow==1.13.1',   
-    'stable-baselines==2.7.0',
+    'numpy',  
+    # 'tensorflow==1.13.1',   
     'gym',
+    # 'stable_baselines==2.7.0',
     'forgi',
     'matplotlib',
-    'PyQt5',
-    'pyqtgraph',
+    'Pyside2',
+    'pyqtgraph==0.11.0rc0',
     'tqdm',
     'pyyaml==3.13']
 

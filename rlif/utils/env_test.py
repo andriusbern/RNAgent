@@ -1,6 +1,4 @@
-# import cv2
 from rlif.rna import colorize_nucleotides
-# from rlif.utils import create_browser, show_rna
 import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
@@ -16,12 +14,8 @@ def test_run(env):
         while not env.done:
             action = env.action_space.sample()
             _, _, env.done, _ = env.step(action)
-            # print(env.solution.string, end='\r\r\r') #' ', env.target_structure.seq, '\n ',
-            # time.sleep(0.05)
-            # input()
         env.next_target_structure()
     env.reset()
-    
 
 def random_sampling_test(env,runs=1000):
     for _ in range(runs):
@@ -30,14 +24,12 @@ def random_sampling_test(env,runs=1000):
             action = env.action_space.sample()
             _, _, env.done, _ = env.step(action)
 
-
 def speed_test(env):
     for _ in range(1000):
         env.reset()
         while not env.done:
             action = env.action_space.sample()
             image, _, env.done, _ = env.step(action)
-
 
 def visual_test(env, pause=False):
         name = 'Visual Test'

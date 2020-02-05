@@ -2,6 +2,6 @@ name: rlif
 channels:
   - bioconda
 dependencies:
-  - python=3.7.3
-  - pip=19.3.1=py37_0
+  - python=3.6
+  # - pip=19.3.1=py36_0
   - viennarna=2.4.14

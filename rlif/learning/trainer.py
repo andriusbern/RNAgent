@@ -1,5 +1,3 @@
-
-
 import os, sys
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
@@ -11,6 +9,7 @@ import stable_baselines, gym, rlif
 from stable_baselines.common.vec_env import SubprocVecEnv, VecFrameStack, DummyVecEnv
 import numpy as np
 import os, yaml, sys, subprocess, time, datetime, random, copy
+
 # Local
 from rlif.rna import DotBracket, Dataset
 from .tester import Tester
@@ -89,13 +88,15 @@ class Trainer(object):
             model_path = max(folder_list, key=os.path.getctime)
         else:
             for folder in folder_list:
-                if num is not None:
-                    if int(folder.split(settings.delimiter)[-1].split('_')[0]) == num:
-                        model_path = folder
-                        if not os.path.isfile(os.path.join(model_path, 'model.pkl')):
-                            model_path = model_path[:-1] + '1'
+                print(folder)
+                # if num is not None:
+                print(num)
+                if int(folder.split(settings.delimiter)[-1].split('_')[0]) == num:
+                    model_path = folder
+                    if not os.path.isfile(os.path.join(model_path, 'model.pkl')):
+                        model_path = model_path[:-1] + '1'
                         # print('Model path:', model_path)
-                        break
+                    break
                 if path is not None:
                     if folder.split(settings.delimiter)[-1] == path:
                         model_path = folder

@@ -44,13 +44,13 @@ environment:
 
   # Data
   meta_learning: true
-  seq_count: 1
+  seq_count: 100
   randomize: true
   exact_seq_length: true
   test_set: false
   seq_len:
     - 55
-    - 56
+    - 120
 
 testing:
   evaluate_every: 2500000

@@ -41,7 +41,7 @@ class DotBracket(object):
     def to_matrix(self):
         """
         Convert the current sequence into a encoded format:
-        e.g.
+        e.g. encoding_type=2
         ..((..))..  ---.
                        |
         1100110011     |
@@ -97,41 +97,58 @@ class DotBracket(object):
         Find paired nucleotide indices by expanding outwards
         from next_hairpin loop edges
         """
-        seq = [x for x in self.seq]
+        stack = []
         pairs = {}
-        for loop in self.loops:
-            stop = False
-            i1, i2 = loop[0], loop[1]
-            # Add pair
-            if seq[i1] == '(' and seq[i2] == ')':
-                pairs[i1] = i2
-                seq[i1], seq[i2] = '-', '-'
-                i1 -= 1
-                i2 += 1
-            max_count = 0
-            while max_count < 1000:
-                # Expansion
-                if seq[i1] != '(':
-                    i1 -= 1
-                if seq[i2] != ')':
-                    i2 += 1
-                # Bounds
-                if i2 > self.len - 1: i2 = self.len - 1
-                if i1 <= 0: i1 = 0
-                # Termination conditions
-                if i1 < 0 or seq[i1] == ')': stop = True
-                if i2 == self.len-1 or seq[i2] == '(': stop = True
+        try:
+            for i, char in enumerate(self.seq):
+                if char == '(':
+                    stack.append(i)
+                elif char == ')':
+                    bp = stack.pop()
+                    pairs[bp] = i
+        except Exception as e:
+            print('Number of opening and closing brackets does not match.')
 
-                # Add pair
-                if seq[i1] == '(' and seq[i2] == ')':
-                    pairs[i1] = i2
-                    seq[i1], seq[i2] = '-', '-'
-                    i1 -= 1
-                    i2 += 1
-                max_count += 1
-                if stop:
-                    break
         return pairs
+
+
+
+
+        # seq = [x for x in self.seq]
+        # pairs = {}
+        # for loop in self.loops:
+        #     stop = False
+        #     i1, i2 = loop[0], loop[1]
+        #     # Add pair
+        #     if seq[i1] == '(' and seq[i2] == ')':
+        #         pairs[i1] = i2
+        #         seq[i1], seq[i2] = '-', '-'
+        #         i1 -= 1
+        #         i2 += 1
+        #     max_count = 0
+        #     while max_count < 1000:
+        #         # Expansion
+        #         if seq[i1] != '(':
+        #             i1 -= 1
+        #         if seq[i2] != ')':
+        #             i2 += 1
+        #         # Bounds
+        #         if i2 > self.len - 1: i2 = self.len - 1
+        #         if i1 <= 0: i1 = 0
+        #         # Termination conditions
+        #         if i1 < 0 or seq[i1] == ')': stop = True
+        #         if i2 == self.len-1 or seq[i2] == '(': stop = True
+
+        #         # Add pair
+        #         if seq[i1] == '(' and seq[i2] == ')':
+        #             pairs[i1] = i2
+        #             seq[i1], seq[i2] = '-', '-'
+        #             i1 -= 1
+        #             i2 += 1
+        #         max_count += 1
+        #         if stop:
+        #             break
+        # return pairs
 
     #########
     # Metrics
@@ -166,6 +183,7 @@ class DotBracket(object):
 
         def mark(motif, index, length):
             """
+            Set a marker for a motif
             """
             markers[index-length:index] = motif * length
             counter[motif] += 1

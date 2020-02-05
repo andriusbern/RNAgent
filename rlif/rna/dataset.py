@@ -4,41 +4,50 @@ import matplotlib.pyplot as plt
 from rlif.rna import load_length_metadata, load_sequence
 from rlif.rna import DotBracket
 from rlif.settings import ConfigManager as settings
-# from rlif.utils import show_rna, create_browser
+from rlif.rna import load_fasta
 
 class Dataset(object):
+    """
+    TODO:
+        rewrite the init to start from a string (either the name of base datasets or a fasta file)
+    """
     def __init__(
             self,
+            dataset,
             length=None,
             start=1,
             n_seqs=100,
             sequences=None,
-            dataset='rfam_train',
             encoding_type=2):
 
         self.dataset = dataset
         self.path = os.path.join(settings.DATA, dataset)
         self.sequence_length = length
-    
-        # Load sequences of specific length only
-        if length is not None:
-            if isinstance(length, int):
-                sequence_file_numbers = load_length_metadata(dataset, length)
-                self.sequences = [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in sequence_file_numbers[:n_seqs]]
-            if isinstance(length, list):
-                if len(length) <= 2:
-                    length = range(length[0], length[1])
-                self.sequences = []
-                for l in length:
-                    sequence_file_numbers = load_length_metadata(dataset, l)    
-                    self.sequences += [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in sequence_file_numbers[:n_seqs]]
-        # Create dataset from a list of sequences loaded elsewhere
-        if sequences is not None:
-            self.sequences = sequences
-        # Otherwise load all consecutive sequences from start to start+n_seqs
-        elif sequences is None and length is None:
-            self.sequences = [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in range(start, start+n_seqs)]
-            self.sequences = [index for index in self.sequences if index is not None]
+
+        if dataset.split('.')[-1] in ['fasta', 'fa']:
+            solutions = load_fasta(settings.test_config)
+            self.sequences = [solution.target for solution in solutions]
+
+        else:
+            # Load sequences of specific length only
+            if length is not None:
+                if isinstance(length, int):
+                    sequence_file_numbers = load_length_metadata(dataset, length)
+                    self.sequences = [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in sequence_file_numbers[:n_seqs]]
+                if isinstance(length, list):
+                    if len(length) <= 2:
+                        length = range(length[0], length[1])
+                    self.sequences = []
+                    for l in length:
+                        sequence_file_numbers = load_length_metadata(dataset, l)    
+                        self.sequences += [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in sequence_file_numbers[:n_seqs]]
+            # Create dataset from a list of sequences loaded elsewhere
+            if sequences is not None:
+                self.sequences = sequences
+            # Otherwise load all consecutive sequences from start to start+n_seqs
+            elif sequences is None and length is None:
+                self.sequences = [load_sequence(index, dataset=dataset, encoding_type=encoding_type) for index in range(start, start+n_seqs)]
+                self.sequences = [index for index in self.sequences if index is not None]
 
         self.n_seqs = len(self.sequences)
         self.statistics()

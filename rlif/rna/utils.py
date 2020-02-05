@@ -4,7 +4,66 @@ import os, random
 import copy, datetime, yaml
 import rlif
 import sys, subprocess, time
-from .sequence import DotBracket
+from .dotbracket import DotBracket
+
+
+def load_fasta(filename, config=None):
+    """
+    Returns a list of Solution Objects obtained by reading a fasta file
+    """
+    from .solution import Solution
+    fname = filename.split(settings.delimiter)[-1]
+    with open(filename, 'r') as fasta:
+        seq = ''
+        sequences = []
+        for line in fasta.readlines():
+            if line[0] == '>':
+                name = line[1:].strip('\n')
+                if seq != '':
+                    seq = seq.replace('T', 'U')
+                    structure, fe = settings.fold_fn(seq)
+                    target = DotBracket(structure)
+                    target.name = name
+                    target.nucleotides = seq
+                    solution = Solution(target=target, config=config, string=seq, time=0, source=fname)
+                    sequences.append(solution)
+                    seq = ''
+            else:
+                seq += line.strip('\n')
+
+    return sequences
+
+
+def write_fasta(filename, sequences, write_dot_brackets=False, linebreak=80):
+    """
+    Write a fasta file from a list of Solution Objects
+    >Name
+    AUGUACGA
+    ...
+
+    Alternatively write a Vienna format file with the target dot-bracket structure
+    alongside the nucleotide sequence:
+    >Name
+    AUGUACGA
+    ((....))
+    ...
+    """
+    with open(filename, 'a+') as fasta:
+        if fasta.readlines().count() > 1:
+            fasta.write('\n')
+
+        for solution in sequences:
+            name = '>' + sequence.target.name + '\n'
+            linebreaks = np.arange([0, len(solution.string), linebreak])
+            nucleotide_string = [solution.string[i:i+linebreak]+'\n' for i in linebreaks]
+            fasta.write(name)
+            fasta.write(nucleotide_string)
+            if write_dot_brackets:
+                dotbrackets = [solution.target.seq[i:i+linebreak]+'\n' for i in linebreaks]
+                fasta.write(dotbrackets)
+            fasta.write('\n')
+
+
 
 def hamming_distance(seq1, seq2):
     """
@@ -81,3 +140,10 @@ def load_length_metadata(dataset, length):
         return data
     except:
         return []
+
+
+
+
+
+
+

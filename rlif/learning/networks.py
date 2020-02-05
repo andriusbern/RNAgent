@@ -4,8 +4,15 @@ import tensorflow as tf
 from stable_baselines.common.policies import ActorCriticPolicy, register_policy, RecurrentActorCriticPolicy, FeedForwardPolicy
 from stable_baselines.a2c.utils import conv, linear, conv_to_fc, seq_to_batch, batch_to_seq, lstm
 from rlif.settings import ConfigManager as settings
-from rlif.settings import ParameterContainer
 import numpy as np
+
+
+class ParameterContainer(dict):
+    """
+    Modified dict - can access keys with dict.key notation instead of dict['key']
+    """
+    def __getattribute__(self, item):
+        return self[item]
 
 def conv1d(input_tensor, scope, *, n_filters, filter_size, stride,
          pad='VALID', init_scale=1.0, data_format='NHWC', one_dim_bias=False):
@@ -34,7 +41,7 @@ def conv1d(input_tensor, scope, *, n_filters, filter_size, stride,
     n_input = input_tensor.get_shape()[channel_ax].value
     wshape = [filter_height, filter_width, n_input, n_filters]
     with tf.variable_scope(scope):
-        weight = tf.get_variable("w", wshape, initializer=ortho_init(init_scale))
+        weight = tf.get_variable("w", wshape)
         bias = tf.get_variable("b", bias_var_shape, initializer=tf.constant_initializer(0.0))
         if not one_dim_bias and data_format == 'NHWC':
             bias = tf.reshape(bias, bshape)
@@ -52,7 +59,6 @@ def custom_cnn(scaled_images, params, **kwargs):
     init_scale = s.conv_init_scale
     # First layer
     odb = True if s.kernel_size[0][1] == 1 else False
-    # odb = True
     out = activ(conv(
         scaled_images, 
         'c0', 
@@ -72,14 +78,14 @@ def custom_cnn(scaled_images, params, **kwargs):
             filter_size=s.kernel_size[i+1], 
             stride=s.stride[i+1], 
             one_dim_bias=odb, 
-            **kwargs))#, init_scale=initinit_scale, 
+            **kwargs))
 
     out = conv_to_fc(out)
     return out
 
 class CustomCnnPolicy(ActorCriticPolicy):
     """
-    Custom CNN policy, requires a params dictionary (ParameterContainer) as an argument
+    Custom CNN policy, requires a params dictionary as an argument
     """
     def __init__(self, sess, ob_space, ac_space, n_env, n_steps, n_batch, reuse=False,
                  params=None, **kwargs):
@@ -87,7 +93,6 @@ class CustomCnnPolicy(ActorCriticPolicy):
         params = ParameterContainer(**params)
         init_scale = params.pd_init_scale
         activ = getattr(tf.nn, params.activ)
-        initializer = getattr(tf, params.kernel_initializer)
 
         with tf.variable_scope('model', reuse=reuse):
             extracted_features = custom_cnn(self.processed_obs, params, )
@@ -142,9 +147,6 @@ class CustomMixedCnnPolicy(ActorCriticPolicy):
                  params=None, **kwargs):
         super(CustomMixedCnnPolicy, self).__init__(sess, ob_space, ac_space, n_env, n_steps, n_batch, reuse=reuse, scale=True)
         params = ParameterContainer(**params)
-        init_scale = params.pd_init_scale
-        activ = getattr(tf.nn, params.activ)
-        initializer = getattr(tf, params.kernel_initializer)
 
         with tf.variable_scope('model', reuse=reuse):
             pass
@@ -202,8 +204,6 @@ class CustomCnnLnLstmPolicy(RecurrentActorCriticPolicy):
         if net_arch is None:  # Legacy mode
             if layers is None:
                 layers = [64, 64]
-            else:
-                warnings.warn("The layers parameter is deprecated. Use the net_arch parameter instead.")
 
             with tf.variable_scope("model", reuse=reuse):
                 if feature_extraction == "cnn":
@@ -225,22 +225,17 @@ class CustomCnnLnLstmPolicy(RecurrentActorCriticPolicy):
 
             self._value_fn = value_fn
         else:  # Use the new net_arch parameter
-            if layers is not None:
-                warnings.warn("The new net_arch parameter overrides the deprecated layers parameter.")
-            # if feature_extraction == "cnn":
-            #     raise NotImplementedError()
 
             with tf.variable_scope("model", reuse=reuse):
                 extracted_features = cnn_extractor(self.processed_obs, params)
                 
                 latent = tf.layers.flatten(extracted_features)
-                policy_only_layers = []  # Layer sizes of the network that only belongs to the policy network
-                value_only_layers = []  # Layer sizes of the network that only belongs to the value network
+                policy_only_layers = [] 
+                value_only_layers = [] 
 
-                # Iterate through the shared layers and build the shared parts of the network
                 lstm_layer_constructed = False
                 for idx, layer in enumerate(net_arch):
-                    if isinstance(layer, int):  # Check that this is a shared layer
+                    if isinstance(layer, int):
                         layer_size = layer
                         latent = act_fun(linear(latent, "shared_fc{}".format(idx), layer_size, init_scale=np.sqrt(2)))
                     elif layer == "lstm":
@@ -263,9 +258,8 @@ class CustomCnnLnLstmPolicy(RecurrentActorCriticPolicy):
                             assert isinstance(layer['vf'],
                                               list), "Error: net_arch[-1]['vf'] must contain a list of integers."
                             value_only_layers = layer['vf']
-                        break  # From here on the network splits up in policy and value network
+                        break 
 
-                # Build the non-shared part of the policy-network
                 latent_policy = latent
                 for idx, pi_layer_size in enumerate(policy_only_layers):
                     if pi_layer_size == "lstm":
@@ -274,7 +268,6 @@ class CustomCnnLnLstmPolicy(RecurrentActorCriticPolicy):
                     latent_policy = act_fun(
                         linear(latent_policy, "pi_fc{}".format(idx), pi_layer_size, init_scale=np.sqrt(2)))
 
-                # Build the non-shared part of the value-network
                 latent_value = latent
                 for idx, vf_layer_size in enumerate(value_only_layers):
                     if vf_layer_size == "lstm":
@@ -288,7 +281,6 @@ class CustomCnnLnLstmPolicy(RecurrentActorCriticPolicy):
                     raise ValueError("The net_arch parameter must contain at least one occurrence of 'lstm'!")
 
                 self._value_fn = linear(latent_value, 'vf', 1)
-                # TODO: why not init_scale = 0.001 here like in the feedforward
                 self._proba_distribution, self._policy, self.q_value = \
                     self.pdtype.proba_distribution_from_latent(latent_policy, latent_value)
         self._setup_init()

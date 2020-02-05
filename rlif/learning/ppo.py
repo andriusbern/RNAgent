@@ -214,9 +214,6 @@ class PPO(object):
             print "Training stopped..."
             self.stop = True
             self.tf_coordinator.request_stop()
-            # #self.tf_coordinator.wait_for_stop()
-            # self.close_session()
-            
 
     def save(self):
         """

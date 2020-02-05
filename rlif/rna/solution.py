@@ -18,23 +18,22 @@ class Solution(object):
         self.time   = time
         self.start  = None
         self.mapping        = {0:'AU', 1:'CG', 2:'GC', 3:'UA', 4:'GU', 5:'UG'}
-        self.reverse_action = {0:3, 1:2, 2:1, 3:0}
+        self.reverse_action = {0:3, 1:2, 2:1, 3:0, 4:5, 5:4}
         self.source = source
         self.str = ['-'] * target.len # List of chars ['-', 'A', "C", "G", "U"]
 
         # Statistics
-        # self.solution_id = settings.get_solution_id()
-        self.hd = 100 # Hamming
+        self.hd = 100 # Hamming distance
         self.md = 0   # Mountain
         self.fe = 0   # Gibbs free energy
-        self.r  = 0
+        self.r  = 0   # Reward
 
         self.mismatch_indices = None
         self.folded_structure = ''
         self.reward_exp  = config['reward_exp']
         self.kernel_size = config['kernel_size']
         self.index = 0
-        self.get_representations()
+        self.create_encoding()
         if self.config_check('boosting'):
             self.graph, = forgi.load_rna(self.target.seq)
 
@@ -57,11 +56,13 @@ class Solution(object):
         else:
             return False
 
-    def get_representations(self):
+    def add_constraint(self, constraint):
+        pass
+
+    def create_encoding(self):
         """
         Generate the representations of the nucleotide sequence of required length based on the the target structure
         """
-
         k = self.kernel_size
         self.rows, length = self.target.structure_encoding.shape
         structure_encoding = np.zeros([self.rows, length + k * 2]) # Padding
@@ -112,7 +113,6 @@ class Solution(object):
             index += 1
         self.index = index
         
-
     def get_state(self, reshape=False):
         """
         Return the current state of the solution (window around the current nucleotide)
@@ -120,7 +120,6 @@ class Solution(object):
         i = self.index 
         k = self.kernel_size
         state = self.encoding[:, i:i+2*k]
-        
         return state.flatten() if reshape else np.expand_dims(state, axis=2)
     
     def evaluate(self, string=None, permute=False, compute_statistics=False, boost=False, reward=False, verbose=False):
@@ -141,15 +140,14 @@ class Solution(object):
             self.folded_structure, self.fe = fold_fn(self.string)
             self.hd, self.mismatch_indices = hamming_distance(self.target.seq, self.folded_structure)
 
-        if compute_statistics:
-            self.compute_statistics()
+        if compute_statistics: self.compute_statistics()
 
         if reward:
             self.r = (1 - float(self.hd)/float(self.target.len)) ** self.reward_exp
             gcau = self.gcau_content()
             if self.hd == 0:
                 self.r += .25
-            if self.config_check('gc'):
+            if self.config_check('gc_penalty') or self.config_check('gc'):
                 self.r = self.r * 0.85 + np.clip(gcau['U'], 0, .15)
 
         if self.start is not None:
@@ -172,6 +170,7 @@ class Solution(object):
             for index in mismatches:
                 for i in window:
                     probs[index] = self.config['mutation_probability']
+                    # Nucleotides at i+1 and i-1
                     if index - i >= 0:
                         all_indices.append(index-i)
                         probs[index-i] = probabilities[i-1]
@@ -192,7 +191,7 @@ class Solution(object):
                     if self.config['allow_gu_permutations'] and self.target.seq[mismatch] != '.':
                         action = random.randint(0, 5)
 
-                    # In case of a stem find the paired nucleotide
+                    # In case of a stem/helix find the paired nucleotide
                     permutation[mismatch] = self.mapping[action][0]
                     if self.target.seq[mismatch] != '.':
                         if self.target.base_pair_indices.get(mismatch) is not None:
@@ -221,13 +220,14 @@ class Solution(object):
 
     def compute_statistics(self):
         """
-        Compute various statistics about the structure
+        Compute various statistics about the secondary RNA structure
         """
         model_details = RNA.md()
         fc = RNA.fold_compound(self.string, model_details)
         fold, fe = fc.mfe()
         fc.exp_params_rescale(self.fe)
         self.partition_prob, self.partition_fn = fc.pf()
+        self.positional_entropy = fc.positional_entropy()
         self.centroid_structure, self.centroid_dist = fc.centroid()
         self.centroid_en = fc.eval_structure(self.centroid_structure)
         self.MEA_structure, self.MEA = fc.MEA()
@@ -239,6 +239,7 @@ class Solution(object):
 
     def init_vars(self):
         self.probability = None
+        self.positional_entropy = None
         # Partition function
         self.partition_prob = None
         self.partition_fn = None
@@ -264,7 +265,6 @@ class Solution(object):
                 gcau[nucleotide] += increment
             except:
                 pass
-
         return gcau
 
     def boost(self, full=False):
