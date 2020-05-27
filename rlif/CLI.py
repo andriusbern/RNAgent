@@ -1,18 +1,12 @@
 import os, sys, argparse, time, re
-try:
-    sys.path.remove('/usr/local/lib/python3.6/site-packages')
-except:
-    pass
 from rlif.rna import Dataset
 from rlif.learning import Trainer, get_parameters
 import rlif.environments
 from rlif.settings import ConfigManager as settings
 from rlif.rna import colorize_nucleotides, highlight_mismatches
 import numpy as np
-
-
-
 import RNA
+
 header = '\n' + '='*120 + '\n'
 
 param_files = {
@@ -45,12 +39,12 @@ def solution_summary(designs, hd=False):
         if i % 10 == 0:
             print(ruler, '\n', target)
         gcau = design.gcau_content()
-        content = '  ||  p: {:.2f} | PF:{:.2f} | CE:{:.2f} | CD:{:.2f} | MEAE:{:.2f} | MEA:{:.2f} | ED:{:.2f}'.format(
+        content = '  ||  p: {:.2f} | PF:{:.2f} | CE:{:.2f} | CD:{:.2f} | MEA:{:.2f} | ED:{:.2f}'.format(
             design.probability,
             design.partition_fn,
             design.centroid_en, 
             design.centroid_dist,
-            design.MEA_en,
+            # design.MEA_en,
             design.MEA,
             design.ensemble_diversity
         )
@@ -105,11 +99,11 @@ def config_summary(args):
         '\nConfiguration: \n',
         'Number of solutions:      %i\n' % args.num_solutions,
         'Attempts per solution:    %i\n' % args.attempts,
-        'Model:                    %s\n' % settings.model_dict[args.model],
+        # 'Model:                    %s\n' % settings.model_args[int(args.model)],
         'Show structure:           %r\n' % args.show,
         'Display failed sequences: %r\n' % args.failed,
         'Permute:                  %r\n' % args.permute,
-        'Vienna parameters:        %s\n' % param_files[args.vienna_config],
+        'Folding parameters:       %s\n' % param_files[args.vienna_config],
         'Verbosity                 %i'   % args.verbosity)
 
 
@@ -168,21 +162,22 @@ def fold(model, args):
     input()
 
 
-def load_model(directory, number, checkpoint=None):
+def load_model(number, checkpoint=None, boost=False):
     n_envs = 6 if args.multi else 1
     trained_model = Trainer(
-        'RnaDesign', directory).load_model(number, checkpoint='12', n_envs=n_envs, t_env=True)
+        'RnaDesign').load_model(number, checkpoint=checkpoint, t_env=True)
+    trained_model.env.set_attr('verbose', False)
     return trained_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--timeout', type=int, default=60)
-    parser.add_argument('-a', '--attempts', type=int, default=10)
+    parser.add_argument('-a', '--attempts', type=int, default=1)
     parser.add_argument('-s', '--show', action='store_true')
-    parser.add_argument('-n', '--num_solutions', type=int, default=10)
+    parser.add_argument('-n', '--num_solutions', type=int, default=25)
     parser.add_argument('-v', '--verbosity', type=int, default=0)
-    parser.add_argument('-m', '--model', type=str, default='0')
-    parser.add_argument('-f', '--failed', action='store_false')
+    parser.add_argument('-m', '--model', type=str, default='1')
+    parser.add_argument('-f', '--failed', action='store_true')
     parser.add_argument('-p', '--permute', action='store_false')
     parser.add_argument('-c', '--vienna_config', type=int, default=1)
     parser.add_argument('--multi', action='store_true')
@@ -195,8 +190,9 @@ if __name__ == "__main__":
         '2': ['experiment4', 1, '10'],
         }
 
-    params = settings.model_dict[args.model]
-    trained_model = load_model(*params)
+    # params = model_dict[args.model]
+    # trained_model = 
+    trained_model = load_model(*settings.model_args[int(args.model)])
 
     try:
         os.system('clear')

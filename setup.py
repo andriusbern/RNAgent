@@ -1,10 +1,10 @@
 from setuptools import setup
 
 packages = [
+    'tensorflow==1.13.1',
     'numpy',  
-    # 'tensorflow==1.13.1',   
     'gym',
-    # 'stable_baselines==2.7.0',
+    'stable_baselines==2.7.0',
     'forgi',
     'matplotlib',
     'Pyside2',

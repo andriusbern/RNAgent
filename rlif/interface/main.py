@@ -47,7 +47,7 @@ class Window(QtWidgets.QMainWindow):
 
 class RLIFGUI(QtWidgets.QApplication):
     def __init__(self, *args):
-        self.setFont(QtGui.QFont('Monospace', 7))
+        self.setFont(QtGui.QFont('Monospace', 9))
         QtWidgets.QApplication.__init__(self, *args)
         self.setStyle('QtCurve')
         self.window = Window(self)

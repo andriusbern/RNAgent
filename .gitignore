@@ -3,7 +3,6 @@ rlif/trained_models
 # !rlif/data/*
 rlif/data/rfam_train
 rlif/data/metadata
-
 rlif/analysis
 rlif/notes.md
 rlif/results/

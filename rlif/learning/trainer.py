@@ -132,7 +132,7 @@ class Trainer(object):
         self._get_model_dir()
         self.config['environment']['path'] = self._model_path
         self.n_steps = self.config['main']['n_steps']
-        self.create_env()
+        self.create_env(test=True)
 
         policy_name = c['main']['policy']
         policy_params = c['policy']
@@ -219,7 +219,7 @@ class Trainer(object):
 
         # Save config
         with open(os.path.join(self._model_path, 'config.yml'), 'w') as f:
-            yaml.dump(self.config, f, indent=4, sort_keys=False, line_break=' ')
+            yaml.dump(self.config, f, indent=4, line_break=' ')
 
         # Fill rate log
         if 'usher' in self.env_name:
@@ -273,7 +273,7 @@ class Trainer(object):
         """
         env = self.test_env
         target = DotBracket(target, 0, 0, encoding_type=self.config['environment']['encoding_type'])
-        data = Dataset(sequences=[target])
+        data = Dataset(dataset='', sequences=[target])
         env.set_attr('dataset', data)
         env.set_attr('meta_learning', False)
         env.set_attr('permute', permute)

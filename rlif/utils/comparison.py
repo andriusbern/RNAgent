@@ -38,7 +38,7 @@ def nupack_fold(sequence, file_n=0, time_limit=10):
         output = p.communicate()[0].decode('utf-8')
         seq = output.split('\n')[-3].strip()
         seq = seq.split(':')[-1].strip()
-        return seq
+        return seq22222
     else:
         p.terminate()
         p.kill()

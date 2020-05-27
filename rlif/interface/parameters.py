@@ -128,8 +128,7 @@ class ParameterContainer(QtWidgets.QGroupBox):
         extra = [self.fold_params, self.checks]
         vienna = ['temperature', 'dangles']
         self.vienna_parameters = ParameterGroup('Vienna Parameters', self.par, vienna, extra)
-        self.vienna_parameters.setFixedWidth(350)
-        # self.vienna_parameters.setFixedHeight(230*config.scaling[0])
+        self.vienna_parameters.setFixedWidth(500)
 
         rlif = ['TIME', 'N_SOLUTIONS', 'ATTEMPTS', 'WORKERS'] + ['permutation_budget', 'permutation_radius', 'permutation_threshold']
         self.rlif_parameters = ParameterGroup('RL Parameters', self.par, rlif)

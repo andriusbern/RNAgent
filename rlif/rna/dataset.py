@@ -1,6 +1,5 @@
 import numpy as np
 import os, random, yaml, time
-import matplotlib.pyplot as plt
 from rlif.rna import load_length_metadata, load_sequence
 from rlif.rna import DotBracket
 from rlif.settings import ConfigManager as settings

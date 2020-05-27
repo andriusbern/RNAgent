@@ -21,7 +21,7 @@ class Tester(object):
         self.test_state = None
         self.done = None
 
-    def evaluate(self, time_limit=60, verbose=False, permute=True, show=False, pause=0):
+    def evaluate(self, time_limit=60, verbose=False, permute=False, show=False, pause=0):
         """
         Run evaluation on test sets and save the model solution checkpoint
         """

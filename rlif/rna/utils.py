@@ -6,7 +6,6 @@ import rlif
 import sys, subprocess, time
 from .dotbracket import DotBracket
 
-
 def load_fasta(filename, config=None):
     """
     Returns a list of Solution Objects obtained by reading a fasta file

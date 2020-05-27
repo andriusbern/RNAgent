@@ -1,6 +1,5 @@
 import numpy as np
 import forgi, math
-import matplotlib.pyplot as plt
 
 class DotBracket(object):
     """

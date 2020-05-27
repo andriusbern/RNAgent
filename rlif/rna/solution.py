@@ -213,7 +213,7 @@ class Solution(object):
 
             if hd == 0:
                 self.source = 'rlif*'
-                print('\nPermutation successful in {}/{} steps.'.format(step, budget))
+                # print('\nPermutation successful in {}/{} steps.'.format(step, budget))
                 break
 
         return best_permutation, min_hd

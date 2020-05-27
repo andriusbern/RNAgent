@@ -150,6 +150,7 @@ class MainWidget(QtWidgets.QWidget):
         self.constraint_input = QtWidgets.QLineEdit(self)
         self.constraint_input.setMinimumWidth(5000*config.scaling[0])
         self.constraint_input.setPlaceholderText('Nucleotide sequence constraint')
+        self.constraint_input.hide()
         self.ruler = QtWidgets.QLineEdit(self)
         self.ruler.setMinimumWidth(5000*config.scaling[0])
         self.ruler.setPlaceholderText(make_ruler(500, 5, add_markers=False))
@@ -158,11 +159,12 @@ class MainWidget(QtWidgets.QWidget):
 
         scroll = QtWidgets.QScrollArea()
         self.inputs = QtWidgets.QWidget()
-        lay = QtWidgets.QVBoxLayout(self.inputs)
+        lay = QtWidgets.QGridLayout(self.inputs)
         lay.addWidget(self.sequence_input)
         lay.addWidget(self.ruler)
         lay.addWidget(self.constraint_input)
         scroll.setWidget(self.inputs)
+        scroll.setFixedHeight(100)
 
         # Progress
         self.progress_view = QtWidgets.QWidget()
@@ -187,16 +189,17 @@ class MainWidget(QtWidgets.QWidget):
         self.img_tabs.setTabText(0, 'MFE')
         self.img_tabs.addTab(self.cnt_disp, 't2')
         self.img_tabs.setTabText(1, 'Centroid')
-        self.img_tabs.setFixedSize(400*config.scaling[0],400*config.scaling[1])
         self.img_tabs.currentChanged.connect(self.reload)
         self.img_display.setStatusTip('Minimum Free Energy (MFE) structure.')
         self.cnt_disp.setStatusTip('Centroid of the ensemble.')
         self.img_container = LabeledWidget(self.img_tabs, self, 'Secondary structure display')
-        self.img_container.setFixedWidth(400)
         self.draw_mode_selection = LabeledComboBox(self, 'Mode', ['Nucleotides', 'Positional entropy'])
         self.draw_mode_selection.setFixedHeight(30)
         self.draw_mode_selection.combo.currentIndexChanged.connect(self.change_draw_mode)
+        self.draw_mode_selection.hide()
         self.img_container.layout.addWidget(self.draw_mode_selection)
+        self.img_tabs.setFixedSize(600, 600)
+        self.img_container.setFixedSize(600*config.scaling[0],640*config.scaling[1])
 
         self.target_statistics = QtWidgets.QTextEdit(self)
         self.target_statistics.setText('Target Statistics:')
@@ -208,19 +211,21 @@ class MainWidget(QtWidgets.QWidget):
         self.results_table = SolutionTable('None', self, None)
         self.solution_viz = SolutionWidget('Plots', self, None)
         self.valid_view = QtWidgets.QWidget()
-        vallay = QtWidgets.QVBoxLayout(self.valid_view)
-        vallay.addWidget(self.solution_viz)
+        vallay = QtWidgets.QHBoxLayout(self.valid_view)
         vallay.addWidget(self.results_table)
-        self.results_table.setMinimumHeight(120*config.scaling[1])
+        vallay.addWidget(self.solution_viz)
+        self.results_table.setMinimumWidth(1000*config.scaling[1])
 
         # Failed solution tab
         self.failed_viz = FailedWidget('Failed Solutions', self)
         self.failed_table = FailedTable('None', self, None)
         self.failed_view = QtWidgets.QWidget()
         faillay = QtWidgets.QGridLayout()
-        faillay.addWidget(self.failed_viz, 1, 1, 1, 1)
-        faillay.addWidget(self.failed_table, 2, 1, 1, 1)
+        # faillay = QtWidgets
+        faillay.addWidget(self.failed_table, 1, 1, 1, 1)
+        faillay.addWidget(self.failed_viz, 1, 2, 1, 1)
         self.failed_view.setLayout(faillay)
+        self.failed_table.setMinimumWidth(850*config.scaling[1])
 
         # Tab container
         self.tabs = QtWidgets.QTabWidget()
@@ -239,11 +244,12 @@ class MainWidget(QtWidgets.QWidget):
         self.enter_button = ClickButton(self, 'New target', [self.update_statistics], status='Use the current RNA secondary structure as target.')
         self.random_button = ClickButton(self, 'Random', [self.random_nucleotide_seq], 'Generate a random nucleotide sequence.')
         self.buttons = QtWidgets.QGroupBox('Control')
-        self.buttons.setFixedSize(250*config.scaling[0], 200)
+        # self.buttons.setFixedSize(250*config.scaling[0], 200)
         self.sequence_buttons = QtWidgets.QWidget()
-        seqblay = QtWidgets.QHBoxLayout(self.sequence_buttons)
+        seqblay = QtWidgets.QVBoxLayout(self.sequence_buttons)
         seqblay.addWidget(self.enter_button)
         seqblay.addWidget(self.random_button)
+        self.sequence_buttons.setFixedWidth(120)
 
         self.dataset_selection = DirectoryComboBox(
             parent=self, 
@@ -278,16 +284,16 @@ class MainWidget(QtWidgets.QWidget):
 
         # Layout
         self.main_layout = QtWidgets.QGridLayout(self)
-        self.main_layout.addWidget(self.buttons, 1, 1, 2, 1)
-        self.main_layout.addWidget(self.stats, 2, 2, 1, 2)
-        self.main_layout.addWidget(self.container, 3, 3, 1, 1)
+        self.main_layout.addWidget(self.buttons, 2, 1, 1, 1)
+        self.main_layout.addWidget(self.stats, 2, 2, 1, 3)
+        self.main_layout.addWidget(self.container, 3, 2, 1, 3)
         # self.main_layout.addWidget(self.sequence_input, 1, 2, 1, 4)
-        self.main_layout.addWidget(scroll, 1, 2, 1, 4)
-        self.main_layout.addWidget(self.sequence_buttons, 1, 6, 1, 1)
-        self.main_layout.addWidget(self.img_container, 2, 6, 2, 1)
-        self.main_layout.addWidget(self.tabs, 4, 2, 3, 5)
+        self.main_layout.addWidget(scroll, 1, 1, 1, 3)
+        self.main_layout.addWidget(self.sequence_buttons, 1, 4, 1, 1)
+        self.main_layout.addWidget(self.img_container, 1, 5, 3, 1)
+        self.main_layout.addWidget(self.tabs, 4, 2, 3, 4)
         self.main_layout.addWidget(self.target_groupbox, 3, 1, 4, 1)
-        self.tabs.setFixedHeight(400)
+        # self.tabs.setFixedHeight(350)
         
         self.parameter_changed()
         self.parse_input()
@@ -314,6 +320,7 @@ class MainWidget(QtWidgets.QWidget):
             self.step_thread.start()
         else:
             if not self.running:
+                self.progress_bar.setRange(0, config.ATTEMPTS)
                 if (self.iter < config.ATTEMPTS or (time.time() - self.start) > config.TIME):
                     self.running = True
                     self.rlif_thread.start()
@@ -402,6 +409,7 @@ class MainWidget(QtWidgets.QWidget):
         target = self.targets[index]
         self.target = target
         self.nucleotides = self.targets[index].nucleotides
+        self.sequence_input.setText(self.target.seq)
         self.update_statistics(render=True, new_target=False)
 
     def solution_selected(self, index, row=True):
@@ -668,15 +676,15 @@ class MainWidget(QtWidgets.QWidget):
             self.nucleotides = nucleotides = solution.string
             
         # f, = forgi.load_rna(target.seq)
-        
-        ruler = make_ruler(80, 5)
+        n_per_row = 50
+        ruler = make_ruler(n_per_row, 5)
         stats = ruler
         nstats = ruler
 
-        for i in range(len(target.seq)//80+1):
-            stats += target.seq[i*80:(i+1)*80] + '\n'
+        for i in range(len(target.seq)//n_per_row+1):
+            stats += target.seq[i*n_per_row:(i+1)*n_per_row] + '\n'
             if nucleotides is not None:
-                nstats += nucleotides[i*80:(i+1)*80] + '\n'
+                nstats += nucleotides[i*n_per_row:(i+1)*n_per_row] + '\n'
         nstats += '\n'+ target.name
 
         stats += '\n{:25}: {:6} | {:20}: {:3}'.format(
@@ -816,7 +824,8 @@ class TargetTable(QtWidgets.QTableWidget):
     def __init__(self, name, parent, config):
         QtWidgets.QTableWidget.__init__(self, 0, 5, parent=parent)
         self.par = parent
-        self.setColumnWidth(0, 70)
+        self.img_size = 90
+        self.setColumnWidth(0, self.img_size)
         self.setColumnWidth(1, 30)
         self.setColumnWidth(2, 30)
         self.setColumnWidth(3, 30)
@@ -825,14 +834,13 @@ class TargetTable(QtWidgets.QTableWidget):
         self.currentCellChanged.connect(self.row_selected)
 
     def new_target(self, target):
-        size = 70 
         row = self.rowCount()
         self.insertRow(row)
-        self.setRowHeight(row, size)
-        self.setColumnWidth(0, size)
+        self.setRowHeight(row, self.img_size)
+        self.setColumnWidth(0, self.img_size)
 
         thumb = QtSvg.QSvgWidget(self)
-        thumb.setFixedSize(size, size)
+        thumb.setFixedSize(self.img_size, self.img_size)
         img = os.path.join(config.UTILS, 'draw_rna', 'output.svg')
         thumb.load(img)
         
@@ -904,11 +912,11 @@ class SolutionWidget(QtWidgets.QGroupBox):
             y_label='Distance to the centroid of the ensemble.')
         
         self.plots = [self.prob_plot, self.centroid_d_plot, self.ed_plot]
-        self.main_layout = QtWidgets.QHBoxLayout()
-        self.main_layout.addWidget(self.prob_plot.view)
-        self.main_layout.addWidget(self.centroid_d_plot.view)
-        self.main_layout.addWidget(self.ed_plot.view)
-        self.main_layout.addWidget(self.nucl_content_plot)
+        self.main_layout = QtWidgets.QGridLayout()
+        self.main_layout.addWidget(self.prob_plot.view, 1, 1, 1, 1)
+        self.main_layout.addWidget(self.centroid_d_plot.view, 1, 2, 1, 1)
+        self.main_layout.addWidget(self.ed_plot.view, 2, 1, 1, 1)
+        self.main_layout.addWidget(self.nucl_content_plot, 2, 2, 1, 1)
         self.setLayout(self.main_layout)
         self.highlight()
 
@@ -949,7 +957,7 @@ class GCAUBarPlot(pg.PlotWidget):
     def __init__(self, parent, width=150):
         pg.PlotWidget.__init__(self)
         self.bars = []
-        self.getPlotItem().getViewWidget().setFixedWidth(150)
+        # self.getPlotItem().getViewWidget().setFixedWidth(150)
         self.getPlotItem().getAxis('bottom').setStyle(showValues=False)
         # self.bar_plot(heights=[0,0,0,0], colors=['r','g','y','b'])
         self.setBackground(None)
@@ -999,9 +1007,9 @@ class CrosshairPlot(pg.ScatterPlotItem):
         self.crosshair.set_pos(x=self.data[index][0], y=self.data[index][1])
         
 
-class FailedWidget(QtWidgets.QGroupBox):
+class FailedWidget(QtWidgets.QWidget):
     def __init__(self, name, parent):
-        QtWidgets.QGroupBox.__init__(self, parent=parent)
+        QtWidgets.QWidget.__init__(self, parent=parent)
         self.par = parent
         self.solutions = []
         
@@ -1017,12 +1025,12 @@ class FailedWidget(QtWidgets.QGroupBox):
 
         self.nucl_content_plot = GCAUBarPlot(self)
         self.img_display = QtSvg.QSvgWidget()
-        self.img_display.setFixedSize(200*config.scaling[0], 200*config.scaling[1])
+        self.img_display.setFixedSize(330*config.scaling[0], 330*config.scaling[1])
         
         self.main_layout = QtWidgets.QGridLayout()
         self.main_layout.addWidget(self.distance_plot.view, 1, 1, 1, 1)
-        self.main_layout.addWidget(self.nucl_content_plot, 1, 2, 1, 1)
-        self.main_layout.addWidget(self.img_display, 1, 3, 1, 1)
+        self.main_layout.addWidget(self.nucl_content_plot, 2, 1, 1, 1)
+        self.main_layout.addWidget(self.img_display, 1, 2, 2, 1)
         self.setLayout(self.main_layout)
     
     def clear(self):
@@ -1103,11 +1111,6 @@ class LabeledComboBox(QtWidgets.QWidget):
 
         self.combo = QtWidgets.QComboBox()
         self.combo.addItems(items)
-        # icon = QtGui.QIcon(QtGui.QPixmap(get_icon(selection)))
-        # self.combo.insertItem(0, icon, label)
-        # self.combo.model().item(0).setEnabled(False)
-        # self.combo.setCurrentIndex(0)
-
         self.main_layout = QtWidgets.QHBoxLayout()
         self.main_layout.addWidget(self.label)
         self.main_layout.addWidget(self.combo)

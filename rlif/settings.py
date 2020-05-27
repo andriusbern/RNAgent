@@ -23,7 +23,7 @@ class ConfigManager():
     ############
     # GUI PARAMETERS
     ############
-    scaling = [1, 1]
+    scaling = [1.1, 1]
     param_files = [
         'rna_turner1999.par',
         'rna_turner2004.par',
@@ -59,7 +59,7 @@ class ConfigManager():
         permutation_budget = np.arange(0, 50),
         permutation_radius = np.arange(1,5),
         permutation_threshold = np.arange(1, 30))
-
+    os = sys.platform
     if sys.platform in ['linux', 'darwin']:
         fold_fn = RNA.fold
         delimiter = '/'

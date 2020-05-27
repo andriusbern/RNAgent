@@ -14,7 +14,7 @@ class RnaDesign(gym.Env):
         self.permute       = self.config['permute']
         self.verbose       = self.config['verbose']
         self.boosting = False
-        self.use_mlp  = True
+        self.use_mlp  = False
         self.testing_mode = True
 
         # Stats
@@ -74,8 +74,8 @@ class RnaDesign(gym.Env):
                 compute_statistics=self.testing_mode,
                 boost=self.boosting)
 
-            print(solution.string)
-            print(solution.target, '\n', solution.r, solution.hd)
+            # print(solution.string)
+            # print(solution.target, '\n', solution.r, solution.hd)
         state, reward = solution.get_state(reshape=self.use_mlp), solution.r
 
         return state, reward, self.done, {}
@@ -116,3 +116,6 @@ class RnaDesign(gym.Env):
 if __name__ == "__main__":
     from rlif.learning import Trainer, get_parameters
     env = RnaDesign(get_parameters('RnaDesign'))
+
+
+
