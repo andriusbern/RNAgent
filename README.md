@@ -1,7 +1,7 @@
 # RLIF - RNA Inverse Folding with Reinforcement Learning
 
 This *Python* package contains:
-1. A reinforcement learning based algorithm for RNA inverse folding (78/100 structures solved on the [*Eterna100*](https://eternagame.org/) benchmark using various models and folding parameter sets).
+1. A reinforcement learning based algorithm for RNA inverse folding (82/100 structures solved on the [*Eterna100*](https://eternagame.org/) benchmark using various models and folding parameter sets).
 2. A graphical interface for RNA design and analysis that integrates *RLIF* with *[ViennaRNA](https://www.tbi.univie.ac.at/RNA/)* package.
 3. A command line interface for generating solutions for RNA secondary structures.
 
