@@ -6,7 +6,7 @@ This *Python* package contains:
 3. A command line interface for generating solutions for RNA secondary structures.
 
 
-<img src="assets/interface2.png" width="600"> 
+<img src="assets/usage.gif" width="700"> 
 
 *GUI of RLIF.*
 
