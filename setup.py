@@ -10,7 +10,7 @@ packages = [
     'Pyside2',
     'pyqtgraph==0.11.0rc0',
     'tqdm',
-    'pyyaml==3.13']
+    'pyyaml==5.4']
 
 setup(
     name='rlif',
