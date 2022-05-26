@@ -1,7 +1,7 @@
 from setuptools import setup
 
 packages = [
-    'tensorflow==1.13.1',
+    'tensorflow==2.7.2',
     'numpy',  
     'gym',
     'stable_baselines==2.7.0',
